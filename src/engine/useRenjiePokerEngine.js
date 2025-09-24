@@ -1,88 +1,208 @@
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import { makeDeck, shuffle, cardId, formatCard } from "../lib/deck";
 import { evaluateBestHand, compareHands } from "../lib/poker-eval";
 
+function topUpDealerPure(dealerArr, remainingArr) {
+  const dealer = [...dealerArr];
+  const remaining = [...remainingArr];
+  while (dealer.length < 8 && remaining.length) {
+    dealer.push(remaining.shift());
+  }
+  return { dealer, remaining };
+}
+
+function dealOneTurnPure(remainingArr, selectionIds) {
+  const remaining = [...remainingArr];
+  const toDealer = [];
+  let playerCard = null;
+
+  while (remaining.length) {
+    const c = remaining.shift();
+    if (!playerCard && selectionIds.has(cardId(c))) {
+      playerCard = c;
+      break;
+    } else {
+      toDealer.push(c);
+    }
+  }
+  return { playerCard, toDealer, remaining };
+}
+
 export default function useRenjiePokerEngine() {
-  const [remaining, setRemaining] = useState(() => shuffle(makeDeck()));
-  const [player, setPlayer] = useState([]);
-  const [dealer, setDealer] = useState([]);
-  const [selection, setSelection] = useState(new Set());
-  const [message, setMessage] = useState("Choose a subset and click Deal.");
-  const [revealDealer, setRevealDealer] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
+    const freshDeck = useMemo(() => shuffle(makeDeck()), []); // one-time seed
+  const [game, setGame] = useState(() => ({
+    player: [],
+    dealer: [],
+    remaining: freshDeck,
+    selection: new Set(),  // Set<string> of card IDs
+    message: "New game — pick a subset and Deal.",
+    gameOver: false,
+    winner: null,          // 'player' | 'dealer' | null
+  }));
 
-  const remainingIds = useMemo(() => new Set(remaining.map(cardId)), [remaining]);
+  // Derived bits you might want in UI
+  const remainingIds = useMemo(() => new Set(game.remaining.map(cardId)), [game.remaining]);
 
-  const reset = useCallback(() => {
-    setRemaining(shuffle(makeDeck()));
-    setPlayer([]); setDealer([]); setSelection(new Set());
-    setMessage("Choose a subset and click Deal.");
-    setRevealDealer(false); setGameOver(false);
-  }, []);
+  // Evaluate best hands
+  const playerEval = useMemo(
+    () => (game.player.length ? evaluateBestHand(game.player) : null),
+    [game.player]
+  );
+  const dealerEval = useMemo(
+    () => (game.dealer.length ? evaluateBestHand(game.dealer) : null),
+    [game.dealer]
+  );
+
+  // ---- selection helpers ---------------------------------------------------
 
   const toggleSelect = useCallback((card) => {
-    if (!remainingIds.has(cardId(card))) return;
-    const next = new Set(selection);
     const id = cardId(card);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setSelection(next);
-  }, [selection, remainingIds]);
+    setGame(prev => {
+      // ignore if card no longer remains in the deck
+      if (!prev.remaining.some(c => cardId(c) === id)) return prev;
+
+      const nextSel = new Set(prev.selection);
+      if (nextSel.has(id)) nextSel.delete(id);
+      else nextSel.add(id);
+      return { ...prev, selection: nextSel };
+    });
+  }, []);
+
+  const selectSuit = useCallback((suitKey) => {
+    setGame(prev => {
+      const nextSel = new Set(prev.selection);
+      for (const c of prev.remaining) {
+        if (c.suitKey === suitKey) nextSel.add(cardId(c)); // idempotent add
+      }
+      return { ...prev, selection: nextSel };
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setGame(prev => {
+      const nextSel = new Set(prev.selection);
+      for (const c of prev.remaining) nextSel.add(cardId(c));
+      return { ...prev, selection: nextSel };
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setGame(prev => ({ ...prev, selection: new Set() }));
+  }, []);
+
+  // ---- core actions --------------------------------------------------------
+
+  const reset = useCallback(() => {
+    setGame({
+      player: [],
+      dealer: [],
+      remaining: shuffle(makeDeck()),
+      selection: new Set(),
+      message: "New game — pick a subset and Deal.",
+      gameOver: false,
+      winner: null,
+    });
+  }, []);
 
   const deal = useCallback(() => {
-    if (gameOver || player.length >= 5) return;
+    setGame(prev => {
+      if (prev.gameOver) return prev;
+      if (prev.player.length >= 5) return prev;
+      if (prev.selection.size === 0) return { ...prev, message: "Select at least one card to deal." };
+      if (prev.remaining.length === 0) return { ...prev, message: "No cards remaining." };
 
-    const anyInDeck = [...selection].some(id => remainingIds.has(id));
-    if (!anyInDeck) { setMessage("Your subset has no cards left."); return; }
+      // Run one "turn" against the current snapshot
+      const { playerCard, toDealer, remaining } =
+        dealOneTurnPure(prev.remaining, prev.selection);
 
-    const newDealer = [...dealer], newPlayer = [...player], newRemaining = [];
-    let delivered = null;
-
-    for (let i = 0; i < remaining.length; i++) {
-      const c = remaining[i];
-      if (selection.has(cardId(c))) {
-        delivered = c;
-        newPlayer.push(c);
-        for (let j = i + 1; j < remaining.length; j++) newRemaining.push(remaining[j]);
-        break;
-      } else {
-        newDealer.push(c);
+      if (!playerCard) {
+        // We ran out without hitting selection: all burns go to dealer
+        return {
+          ...prev,
+          dealer: [...prev.dealer, ...toDealer],
+          remaining,
+          message: "No match found — dealer took all dealt cards. Try again.",
+        };
       }
-    }
 
-    if (!delivered) { setMessage("No selected card found. Try another selection."); return; }
+      // Normal case: give player their match, dealer gets burns
+      const nextPlayer = [...prev.player, playerCard];
+      const nextDealer = [...prev.dealer, ...toDealer];
 
-    setDealer(newDealer); setPlayer(newPlayer); setRemaining(newRemaining); setSelection(new Set());
+      return {
+        ...prev,
+        player: nextPlayer,
+        dealer: nextDealer,
+        remaining,
+        // keep selection as-is (user can press deal again or adjust)
+        message: nextPlayer.length === 5
+          ? "You have 5 cards — finishing the game..."
+          : "Dealt. Choose next subset and Deal.",
+      };
+    });
+  }, []);
 
-    if (newPlayer.length === 5) {
-      let d = [...newDealer], rem = [...newRemaining];
-      while (d.length < 8 && rem.length) d.push(rem.shift()); // dealer ≥ 8
-      setDealer(d); setRemaining(rem);
-      setMessage("Player has 5 cards. Click 'Score'.");
-    } else {
-      setMessage(`You received ${formatCard(delivered)}. Pick a new subset.`);
-    }
-  }, [dealer, player, remaining, selection, remainingIds, gameOver]);
+   // ---- auto-finish when player reaches 5 -----------------------------------
 
-  const revealAndScore = useCallback(() => {
-    if (player.length !== 5) { setMessage("You need 5 cards first."); return; }
-    if (dealer.length < 5)   { setMessage("Dealer needs at least 5 cards."); return; }
+  useEffect(() => {
+    if (game.gameOver) return;
+    if (game.player.length !== 5) return;
 
-    setRevealDealer(true);
-    const pH = evaluateBestHand(player);
-    const dH = evaluateBestHand(dealer);
-    const cmp = compareHands(pH, dH);
-    setGameOver(true);
-    if (cmp > 0) setMessage(`Player wins! Player: ${pH.name} vs Dealer: ${dH.name}`);
-    else if (cmp < 0) setMessage(`Dealer wins! Player: ${pH.name} vs Dealer: ${dH.name}`);
-    else setMessage(`Tie — Dealer wins ties. Player: ${pH.name} vs Dealer: ${dH.name}`);
-  }, [player, dealer]);
+    setGame(prev => {
+      if (prev.gameOver) return prev;
 
-  const playerEval = useMemo(() => player.length === 5 ? evaluateBestHand(player) : null, [player]);
-  const dealerEval = useMemo(() => (revealDealer || gameOver) && dealer.length >= 5 ? evaluateBestHand(dealer) : null, [dealer, revealDealer, gameOver]);
+      const { dealer: dealerFinal, remaining: remainingFinal } =
+        topUpDealerPure(prev.dealer, prev.remaining);
 
+      // console.log("******************");
+      // console.log(prev.player);
+      // console.log("******************");
+      // console.log(dealerFinal);
+      // console.log("******************");
+
+      const pH = evaluateBestHand(prev.player);
+      const dH = evaluateBestHand(dealerFinal);
+      const cmp = compareHands(pH, dH);
+      const winner = cmp > 0 ? "player" : cmp < 0 ? "dealer" : "dealer"; // ties to dealer
+
+      const message =
+        winner === "player"
+          ? `Player wins! Player: ${pH.name} vs Dealer: ${dH.name}`
+          : `Dealer wins${cmp === 0 ? " (ties go to dealer)" : ""}. Player: ${pH.name} vs Dealer: ${dH.name}`;
+
+      return {
+        ...prev,
+        dealer: dealerFinal,
+        remaining: remainingFinal,
+        gameOver: true,
+        winner,
+        message,
+      };
+    });
+  }, [game.player.length, game.gameOver]);
+
+
+  
   return {
-    remaining, player, dealer, selection, message, revealDealer, gameOver, remainingIds,
-    playerEval, dealerEval,
-    reset, toggleSelect, deal, revealAndScore,
+    // state
+    player: game.player,
+    dealer: game.dealer,             
+    remainingIds,
+    selection: game.selection,
+    message: game.message,
+    gameOver: game.gameOver,
+    winner: game.winner,
+
+    // evaluations for UI
+    playerEval,
+    dealerEval,
+
+    // actions
+    reset,
+    deal,
+    toggleSelect,
+    selectSuit,
+    selectAll,
+    clearSelection,
   };
 }

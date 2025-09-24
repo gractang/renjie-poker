@@ -92,6 +92,19 @@ export function evaluateBestHand(cards) {
     const k=byRank.find(c=>c.rVal!==p1 && c.rVal!==p2);
     return { score: 2e9+p1*1e6+p2*1e4+(k?.rVal||0)*1e2, name:"Two Pair", kickerRanks:[p1,p1,p2,p2,k?.rVal||0], bestFive:[...rankCounts.get(p1).slice(0,2), ...rankCounts.get(p2).slice(0,2), k] };
   }
+
+  // One Pair
+  if (pairs.length===1) {
+    const p=pairs[0][0];
+    const pCards=rankCounts.get(p).slice(0,2);
+    const ks=byRank.filter(c=>c.rVal!==p).slice(0,3);
+    return { score: 1e9+p*1e6+ranksToLexScore(ks.map(c=>c.rVal)), name:"One Pair", kickerRanks:[p,p,...ks.map(c=>c.rVal)], bestFive:[...pCards,...ks] };
+  }
+  
+  // High Card
+  const top5=byRank.slice(0,5);
+  return { score: ranksToLexScore(top5.map(c=>c.rVal)), name:"High Card", kickerRanks:top5.map(c=>c.rVal), bestFive:top5 };
+  
 }
 
 export function compareHands(hA, hB) { return hA.score - hB.score; }

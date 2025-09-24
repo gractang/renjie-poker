@@ -3,6 +3,10 @@ import HandRow from "../components/HandRow";
 import SelectionGrid from "../components/SelectionGrid";
 import Controls from "../components/Controls";
 import ThemeToggle from "../components/ThemeToggle";
+import Modal from "../components/Modal";
+import RulesContent from "../components/RulesContent";
+
+import { useState } from "react";
 
 export default function App() {
   const eng = useRenjiePokerEngine();
@@ -11,6 +15,8 @@ export default function App() {
     playerEval, dealerEval
   } = eng;
 
+  const [showRules, setShowRules] = useState(false);
+
   return (
     // Full-screen flex column
     <div className="min-h-screen flex flex-col">
@@ -18,14 +24,17 @@ export default function App() {
       <header className="p-4 flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-2xl font-bold">Renjie Poker</h1>
         <div className="flex items-center gap-3">
+          
+
           <ThemeToggle />
           <Controls
             onNew={eng.reset}
             onDeal={eng.deal}
-            onReveal={eng.revealAndScore}
             canDeal={player.length < 5}
             canReveal={player.length === 5}
           />
+          <button className="btn-theme" onClick={() => setShowRules(true)}>How to Play</button>
+
         </div>
       </header>
 
@@ -58,6 +67,17 @@ export default function App() {
         <section className="mt-auto sticky bottom-0 border-t bg-[var(--color-background)]/85 backdrop-blur">
           <div className="p-3">
             <div className="text-sm font-medium mb-2">Select Subset (from remaining deck)</div>
+            {/* Suit quick-selects */}
+            <div className="flex items-center gap-2">
+                <button className="btn-theme" onClick={() => eng.selectSuit("S")}>♠</button>
+                <button className="btn-theme text-[var(--color-suit-red)]" onClick={() => eng.selectSuit("H")}>♥</button>
+                <button className="btn-theme" onClick={() => eng.selectSuit("C")}>♣</button>
+                <button className="btn-theme text-[var(--color-suit-red)]" onClick={() => eng.selectSuit("D")}>♦</button>
+                {/* New: bulk actions */}
+                <button className="btn-theme" onClick={eng.selectAll}>Select All</button>
+                <button className="btn-theme" onClick={eng.clearSelection}>Clear</button>
+            </div>
+            {/* Scrollable grid of remaining cards */}
             <div className="max-h-[50vh] overflow-y-auto">
               <SelectionGrid
                 remainingIds={remainingIds}
@@ -68,6 +88,11 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* Modal mount */}
+      <Modal open={showRules} onClose={() => setShowRules(false)} title="How to Play">
+        <RulesContent />
+      </Modal>
     </div>
   );
 }
