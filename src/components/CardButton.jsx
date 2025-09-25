@@ -6,9 +6,9 @@ export default function CardButton({ card, disabled=false, selected=false, onTog
     <button
       onClick={() => !disabled && onToggle?.(card)}
       className={[
-        "border-0 relative w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-32",
+        "border-0 relative w-16 h-24 sm:w-16 sm:h-24 lg:w-20 lg:h-28",
         "rounded-xl shadow-sm border flex items-center justify-center m-1",
-        disabled ? "bg-[var(--color-disabled)] text-gray-400 cursor-not-allowed" : "bg-[var(--color-neutral)] hover:shadow-md",
+        disabled ? "bg-[var(--color-neutral)] text-gray-400 cursor-not-allowed opacity-50" : "bg-[var(--color-neutral)] hover:shadow-md",
         selected ? "ring-3 ring-[var(--color-selected)]" : "",
       ].join(" ")}
       title={formatCard(card)}

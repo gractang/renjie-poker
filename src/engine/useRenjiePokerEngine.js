@@ -78,6 +78,16 @@ export default function useRenjiePokerEngine() {
     });
   }, []);
 
+  const selectRank = useCallback((rank) => {
+    setGame(prev => {
+      const nextSel = new Set(prev.selection);
+      for (const c of prev.remaining) {
+        if (c.rank === rank) nextSel.add(cardId(c)); // idempotent add
+      }
+      return { ...prev, selection: nextSel };
+    });
+  }, []);
+
   const selectAll = useCallback(() => {
     setGame(prev => {
       const nextSel = new Set(prev.selection);
@@ -115,6 +125,8 @@ export default function useRenjiePokerEngine() {
       const { playerCard, toDealer, remaining } =
         dealOneTurnPure(prev.remaining, prev.selection);
 
+      console.log("to player:", playerCard ? formatCard(playerCard) : "none", "| to dealer:", toDealer.map(formatCard).join(", ") || "none");
+
       if (!playerCard) {
         // We ran out without hitting selection: all burns go to dealer
         return {
@@ -125,24 +137,23 @@ export default function useRenjiePokerEngine() {
         };
       }
 
-      // Normal case: give player their match, dealer gets burns
       const nextPlayer = [...prev.player, playerCard];
       const nextDealer = [...prev.dealer, ...toDealer];
+
+      console.log(nextPlayer.length, "cards in player hand;", nextDealer.length, "in dealer hand;", remaining.length, "remaining.");
 
       return {
         ...prev,
         player: nextPlayer,
         dealer: nextDealer,
         remaining,
-        // keep selection as-is (user can press deal again or adjust)
+        selection: new Set(), // clear selection
         message: nextPlayer.length === 5
           ? "You have 5 cards — finishing the game..."
           : "Dealt. Choose next subset and Deal.",
       };
     });
   }, []);
-
-   // ---- auto-finish when player reaches 5 -----------------------------------
 
   useEffect(() => {
     if (game.gameOver) return;
