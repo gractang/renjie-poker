@@ -14,7 +14,7 @@
     --color-selected:  #457b9d;
     --color-suit-red:    #dc2626; /* red-600-ish */
     --color-suit-black:  #000000; /* light-mode black */
-    --color-disabled:  #7a869c;
+    /* --color-disabled:  #7a869c; */
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -32,7 +32,7 @@
     --color-selected:  #457b9d;
     --color-suit-red:    #f87171; /* red-400-ish for dark */
     --color-suit-black:  #ffffff; /* dark-mode white */
-    --color-disabled: #113a54;
+    /* --color-disabled: #113a54; */
     }
 
     html, body {
@@ -94,16 +94,3 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color; */
 /* } */
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
