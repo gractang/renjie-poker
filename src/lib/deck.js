@@ -21,5 +21,9 @@ export function shuffle(arr) {
   return a;
 }
 
-export const cardId = (c) => `${c.rank}${c.suitKey}`;
+export const cardId = (c) => {
+  if (!c) return "unknown"; 
+  return `${c.rank}${c.suitKey}`;
+};
+
 export const formatCard = (c) => `${c.rank}${c.suit}`;
