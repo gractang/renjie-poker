@@ -46,11 +46,19 @@
     @apply border-0 inline-flex items-center gap-2 px-3 py-1 rounded-xl border transition;
     @apply bg-[var(--color-neutral)] text-[var(--color-text)];
     @apply hover:bg-[var(--color-accent)] hover:text-[var(--color-background)];
+    /* Mobile: slightly larger but proportional */
+    @media (max-width: 768px) {
+      @apply px-3 py-2 min-h-[40px] text-sm;
+    }
   }
 
   .card-display-theme{
     @apply w-12 h-16 m-1 rounded-xl border-0 flex items-center justify-center;
     @apply bg-[var(--color-neutral)];
+    /* Mobile: larger cards for better visibility */
+    @media (max-width: 768px) {
+      @apply w-14 h-20 text-lg;
+    }
   }
 }
 

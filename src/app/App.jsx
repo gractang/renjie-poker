@@ -94,11 +94,9 @@ export default function App() {
     // Full-screen flex column
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="p-4 flex flex-wrap items-center gap-3 justify-between">
+      <header className="p-4 flex flex-col md:flex-row items-start md:items-center gap-3 justify-between">
         <h1 className="text-2xl font-bold">Renjie Poker</h1>
-        <div className="flex items-center gap-3">
-
-
+        <div className="flex flex-wrap items-center gap-2">
           <ThemeToggle />
           <Controls
             onNew={eng.reset}
@@ -107,12 +105,11 @@ export default function App() {
             newGameFlash={buttonFlash.newGame}
           />
           <button 
-            className={`btn-theme ${buttonFlash.help ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
+            className={`btn-theme text-sm ${buttonFlash.help ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
             onClick={() => setShowRules(true)}
           >
             How to Play
           </button>
-
         </div>
       </header>
 
@@ -121,8 +118,8 @@ export default function App() {
         <div className="mb-3 text-sm opacity-80">{message}</div>
 
         {/* Player + dealer shrink naturally (no forced height) */}
-        <section className="flex flex-wrap gap-6 mb-6">
-          <div className="flex-1 min-w-[280px]">
+        <section className="flex flex-col md:flex-row gap-6 mb-6">
+          <div className="flex-1 min-w-0">
             <div className="text-lg font-semibold mb-2">Player ({player.length})</div>
             <HandRow
               title={playerEval ? `Best: ${playerEval.name}` : "Your hand"}
@@ -131,7 +128,7 @@ export default function App() {
             />
           </div>
 
-          <div className="flex-1 min-w-[280px]">
+          <div className="flex-1 min-w-0">
             <div className="text-lg font-semibold mb-2">Dealer ({dealer.length})</div>
             <HandRow
               title={dealerEval ? `Best: ${dealerEval.name}` : "Dealer's cards"}
@@ -143,7 +140,7 @@ export default function App() {
 
         {/* Selection sticks to bottom, but pushes down if tall */}
         <section className="mt-auto sticky bottom-0 border-t bg-[var(--color-background)]/85 backdrop-blur">
-          <div className="p-3">
+          <div className="p-3 max-w-full">
             <div className="text-sm font-medium mb-2">Select Subset (from remaining deck)</div>
             <SelectionButtons
               onSelectSuit={eng.selectSuit}

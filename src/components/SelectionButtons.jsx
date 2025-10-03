@@ -35,11 +35,11 @@ export default function SelectionButtons({
   );
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Deal Selected button - always visible */}
+    <div className="w-full">
+      {/* Deal Selected button - full width on mobile, auto on desktop */}
       <button 
         ref={dealButtonRef}
-        className={`btn-theme ${hasSelection ? 'border-2 border-blue-500' : 'opacity-50 cursor-not-allowed'} ${buttonFlash.deal ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
+        className={`btn-theme w-full md:w-auto ${hasSelection ? 'border-2 border-blue-500' : 'opacity-50 cursor-not-allowed'} ${buttonFlash.deal ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
         onClick={hasSelection ? onDeal : undefined}
         disabled={!hasSelection || !canDeal}
         title={!hasSelection ? "Select cards first to enable deal" : !canDeal ? "Player already has 5 cards" : "Deal selected cards (or press Enter)"}
@@ -47,34 +47,46 @@ export default function SelectionButtons({
         Deal Selected
       </button>
       
-      {/* Suit buttons */}
-      <div className="flex items-center gap-2">
-        {suitButtons.map(button => 
-          renderButton(button, () => onSelectSuit(button.key), `suit-${button.key}`)
-        )}
-      </div>
-      
-      {/* Rank buttons */}
-      <div className="flex items-center gap-1">
-        {rankButtons.map(button => 
-          renderButton(button, () => onSelectRank(button.key), `rank-${button.key}`)
-        )}
-      </div>
-      
-      {/* Action buttons */}
-      <div className="flex items-center gap-2">
-        <button 
-          className={`btn-theme ${buttonFlash.selectAll ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
-          onClick={onSelectAll}
-        >
-          Select All
-        </button>
-        <button 
-          className={`btn-theme ${buttonFlash.clear ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
-          onClick={onClearSelection}
-        >
-          Clear
-        </button>
+      {/* Responsive button groups */}
+      <div className="space-y-3 mt-3">
+        {/* Suit buttons - responsive layout */}
+        <div className="space-y-1">
+          <h4 className="text-xs font-medium text-gray-600">Suits</h4>
+          <div className="flex items-center gap-1 flex-wrap md:justify-start">
+            {suitButtons.map(button => 
+              renderButton(button, () => onSelectSuit(button.key), `suit-${button.key}`)
+            )}
+          </div>
+        </div>
+        
+        {/* Rank buttons - natural wrap, full width on desktop */}
+        <div className="space-y-1">
+          <h4 className="text-xs font-medium text-gray-600">Ranks</h4>
+          <div className="flex items-center gap-1 flex-wrap md:justify-start">
+            {rankButtons.map(button => 
+              renderButton(button, () => onSelectRank(button.key), `rank-${button.key}`)
+            )}
+          </div>
+        </div>
+        
+        {/* Action buttons - responsive layout */}
+        <div className="space-y-1">
+          <h4 className="text-xs font-medium text-gray-600">Actions</h4>
+          <div className="flex gap-1 md:justify-start">
+            <button 
+              className={`btn-theme w-auto ${buttonFlash.selectAll ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
+              onClick={onSelectAll}
+            >
+              Select All
+            </button>
+            <button 
+              className={`btn-theme w-auto ${buttonFlash.clear ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
+              onClick={onClearSelection}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
