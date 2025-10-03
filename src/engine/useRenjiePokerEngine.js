@@ -213,6 +213,7 @@ export default function useRenjiePokerEngine() {
     deal,
     toggleSelect,
     selectSuit,
+    selectRank,
     selectAll,
     clearSelection,
   };

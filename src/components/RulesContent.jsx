@@ -16,6 +16,37 @@ export default function RulesContent() {
           Dealer wins ties and must have at least 8 cards (they’ll draw to 8 if short).</li>
       </ol>
       <p className="opacity-80">Tip: Use the suit buttons to quickly select all remaining cards of a suit. You can deselect individual cards anytime.</p>
+      
+      <div className="mt-6">
+        <h3 className="font-semibold text-base mb-3">Keyboard Shortcuts</h3>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <h4 className="font-medium mb-2">Card Selection</h4>
+            <div className="space-y-1">
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">S</kbd> Select Spades (♠)</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">H</kbd> Select Hearts (♥)</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">C</kbd> Select Clubs (♣)</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">D</kbd> Select Diamonds (♦)</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">2-9</kbd> Select Rank</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">T</kbd> Select Tens</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">J</kbd> Select Jacks</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Q</kbd> Select Queens</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">K</kbd> Select Kings</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">A</kbd> Select Aces</div>
+            </div>
+          </div>
+          <div>
+            <h4 className="font-medium mb-2">Game Actions</h4>
+            <div className="space-y-1">
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">0</kbd> Select All</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">X</kbd> Clear Selection</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Enter</kbd> Deal Selected</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">N</kbd> New Game</div>
+              <div><kbd className="bg-gray-200 dark:bg-gray-700 px-1 rounded">?</kbd> Show Help</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

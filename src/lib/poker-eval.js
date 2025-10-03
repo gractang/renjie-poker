@@ -29,7 +29,8 @@ export function evaluateBestHand(cards) {
       if (cur===prev-1) run.push(withWheel[i]);
       else if (cur!==prev) run=[withWheel[i]];
       if (run.length>=5) {
-        const top5=run.slice(0,5).map(c=>c._wheel?{...c,rVal:14}:c).sort((a,b)=>b.rVal-a.rVal);
+        const top5=run.slice(0,5);
+        // For wheel straights, keep the ace as low (rVal=1) for proper ordering
         return top5;
       }
     }
@@ -44,12 +45,25 @@ export function evaluateBestHand(cards) {
     }
   }
 
-  if (bestSF) return { score: 8e9 + bestSF[0].rVal*1e6, name:"Straight Flush", kickerRanks: bestSF.map(c=>c.rVal), bestFive: bestSF };
+  if (bestSF) {
+    // Handle wheel straight flush (A-2-3-4-5) - score as 5-high
+    const isWheel = bestSF.some(c => c._wheel);
+    const scoreBase = isWheel ? 5 : bestSF[0].rVal;
+    return { score: 8e9 + scoreBase*1e6, name:"Straight Flush", kickerRanks: bestSF.map(c=>c.rVal), bestFive: bestSF };
+  }
   
   // Quads
   const quads=[...rankCounts.entries()].filter(([,arr])=>arr.length>=4).sort((a,b)=>b[0]-a[0]);
-  if (quads.length){ const q=quads[0][0]; const quad=rankCounts.get(q).slice(0,4); const k=byRank.find(c=>c.rVal!==q);
-  return { score: 7e9+q*1e6+(k?.rVal||0)*1e3, name:"Four of a Kind", kickerRanks:[q,q,q,q,k?.rVal||0], bestFive:[...quad,k] };
+  if (quads.length){ 
+    const q=quads[0][0]; 
+    const quad=rankCounts.get(q).slice(0,4); 
+    const k=byRank.find(c=>c.rVal!==q);
+    if (k) {
+      return { score: 7e9+q*1e6+k.rVal*1e3, name:"Four of a Kind", kickerRanks:[q,q,q,q,k.rVal], bestFive:[...quad,k] };
+    } else {
+      // Edge case: exactly 4 cards, all same rank
+      return { score: 7e9+q*1e6, name:"Four of a Kind", kickerRanks:[q,q,q,q], bestFive:quad };
+    }
   }
 
   // Full House
@@ -58,7 +72,9 @@ export function evaluateBestHand(cards) {
   if (trips.length){ 
     const t=trips[0][0]; 
     let p=null;
+    // Find the highest pair that's not the trips rank
     for (const [r] of pairs){ if (r!==t){ p=r; break; }} 
+    // If no separate pair, check if we have another trips (6+ cards)
     if (!p && trips.length>=2) p=trips[1][0];
     if (p) {
       return { score: 6e9+t*1e6+p*1e3, name:"Full House", kickerRanks:[t,t,t,p,p], bestFive:[...rankCounts.get(t).slice(0,3), ...rankCounts.get(p).slice(0,2)] };
@@ -76,7 +92,13 @@ export function evaluateBestHand(cards) {
   if (bestFlush) return { score: 5e9+ranksToLexScore(bestFlush.map(c=>c.rVal)), name:"Flush", kickerRanks:bestFlush.map(c=>c.rVal), bestFive:bestFlush };
   
   // Straight
-  const st=getStraight(byRank); if (st) return { score: 4e9+st[0].rVal*1e6, name:"Straight", kickerRanks: st.map(c=>c.rVal), bestFive: st };
+  const st=getStraight(byRank); 
+  if (st) {
+    // Handle wheel straight (A-2-3-4-5) - score as 5-high
+    const isWheel = st.some(c => c._wheel);
+    const scoreBase = isWheel ? 5 : st[0].rVal;
+    return { score: 4e9+scoreBase*1e6, name:"Straight", kickerRanks: st.map(c=>c.rVal), bestFive: st };
+  }
   
   // Trips
   if (trips.length){
@@ -90,7 +112,12 @@ export function evaluateBestHand(cards) {
   if (pairs.length>=2) {
     const [p1,p2]=pairs.slice(0,2).map(x=>x[0]).sort((a,b)=>b-a);
     const k=byRank.find(c=>c.rVal!==p1 && c.rVal!==p2);
-    return { score: 2e9+p1*1e6+p2*1e4+(k?.rVal||0)*1e2, name:"Two Pair", kickerRanks:[p1,p1,p2,p2,k?.rVal||0], bestFive:[...rankCounts.get(p1).slice(0,2), ...rankCounts.get(p2).slice(0,2), k] };
+    if (k) {
+      return { score: 2e9+p1*1e6+p2*1e4+k.rVal*1e2, name:"Two Pair", kickerRanks:[p1,p1,p2,p2,k.rVal], bestFive:[...rankCounts.get(p1).slice(0,2), ...rankCounts.get(p2).slice(0,2), k] };
+    } else {
+      // Edge case: exactly 4 cards, two pairs
+      return { score: 2e9+p1*1e6+p2*1e4, name:"Two Pair", kickerRanks:[p1,p1,p2,p2], bestFive:[...rankCounts.get(p1).slice(0,2), ...rankCounts.get(p2).slice(0,2)] };
+    }
   }
 
   // One Pair
