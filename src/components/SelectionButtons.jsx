@@ -1,9 +1,9 @@
 import { RANKS, SUITS, SUIT_KEYS } from "../lib/deck";
 
-export default function SelectionButtons({ 
-  onSelectSuit, 
-  onSelectRank, 
-  onSelectAll, 
+export default function SelectionButtons({
+  onSelectSuit,
+  onSelectRank,
+  onSelectAll,
   onClearSelection,
   onDeal,
   hasSelection,
@@ -11,11 +11,10 @@ export default function SelectionButtons({
   buttonFlash,
   dealButtonRef
 }) {
-  // Generate suit buttons from constants, avoiding magic values
   const suitButtons = SUIT_KEYS.map((key, index) => ({
     key,
     symbol: SUITS[index],
-    isRed: key === "H" || key === "D" // Hearts and Diamonds are red
+    isRed: key === "H" || key === "D"
   }));
 
   const rankButtons = RANKS.map(rank => ({
@@ -24,71 +23,48 @@ export default function SelectionButtons({
     isRed: false
   }));
 
-  const renderButton = (button, onClick, flashKey = null) => (
-    <button 
-      key={button.key}
-      className={`btn-theme ${button.isRed ? 'text-[var(--color-suit-red)]' : ''} ${flashKey && buttonFlash[flashKey] ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
-      onClick={onClick}
-    >
-      {button.symbol}
-    </button>
-  );
+  const flashClass = (key) =>
+    buttonFlash[key] ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : '';
 
   return (
-    <div className="w-full">
-      {/* Deal Selected button - full width on mobile, auto on desktop */}
-      <button 
-        ref={dealButtonRef}
-        className={`btn-theme w-full md:w-auto ${hasSelection ? 'border-2 border-blue-500' : 'opacity-50 cursor-not-allowed'} ${buttonFlash.deal ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
-        onClick={hasSelection ? onDeal : undefined}
-        disabled={!hasSelection || !canDeal}
-        title={!hasSelection ? "Select cards first to enable deal" : !canDeal ? "Player already has 5 cards" : "Deal selected cards (or press Enter)"}
-      >
-        Deal Selected
-      </button>
-      
-      {/* Responsive button groups */}
-      <div className="space-y-3 mt-3">
-        {/* Suit buttons - responsive layout */}
-        <div className="space-y-1">
-          <h4 className="text-xs font-medium text-gray-600">Suits</h4>
-          <div className="flex items-center gap-1 flex-wrap md:justify-start">
-            {suitButtons.map(button => 
-              renderButton(button, () => onSelectSuit(button.key), `suit-${button.key}`)
-            )}
-          </div>
-        </div>
-        
-        {/* Rank buttons - natural wrap, full width on desktop */}
-        <div className="space-y-1">
-          <h4 className="text-xs font-medium text-gray-600">Ranks</h4>
-          <div className="flex items-center gap-1 flex-wrap md:justify-start">
-            {rankButtons.map(button => 
-              renderButton(button, () => onSelectRank(button.key), `rank-${button.key}`)
-            )}
-          </div>
-        </div>
-        
-        {/* Action buttons - responsive layout */}
-        <div className="space-y-1">
-          <h4 className="text-xs font-medium text-gray-600">Actions</h4>
-          <div className="flex gap-1 md:justify-start">
-            <button 
-              className={`btn-theme w-auto ${buttonFlash.selectAll ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
-              onClick={onSelectAll}
-            >
-              Select All
-            </button>
-            <button 
-              className={`btn-theme w-auto ${buttonFlash.clear ? 'animate-pulse bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
-              onClick={onClearSelection}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
+    <div className="w-full space-y-2">
+      {/* Top row: Deal + actions */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <button
+          ref={dealButtonRef}
+          className={`btn-theme ${hasSelection ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : 'opacity-30 cursor-not-allowed'} ${flashClass('deal')}`}
+          onClick={hasSelection ? onDeal : undefined}
+          disabled={!hasSelection || !canDeal}
+        >
+          deal
+        </button>
+        <span className="w-px h-5 bg-[var(--color-border)]" />
+        <button className={`btn-theme ${flashClass('selectAll')}`} onClick={onSelectAll}>all</button>
+        <button className={`btn-theme ${flashClass('clear')}`} onClick={onClearSelection}>clear</button>
+      </div>
+
+      {/* Suits */}
+      <div className="flex items-center gap-1 flex-wrap">
+        {suitButtons.map(b => (
+          <button
+            key={b.key}
+            className={`btn-theme ${b.isRed ? 'text-[var(--color-suit-red)]' : ''} ${flashClass(`suit-${b.key}`)}`}
+            onClick={() => onSelectSuit(b.key)}
+          >
+            {b.symbol}
+          </button>
+        ))}
+        <span className="w-px h-5 bg-[var(--color-border)]" />
+        {rankButtons.map(b => (
+          <button
+            key={b.key}
+            className={`btn-theme ${flashClass(`rank-${b.key}`)}`}
+            onClick={() => onSelectRank(b.key)}
+          >
+            {b.symbol}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
-
