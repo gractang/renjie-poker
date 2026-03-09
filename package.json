@@ -4,8 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "run-p css:watch dev:vite",
+    "dev:vite": "vite",
+    "css:build": "tailwindcss -i ./src/styles/index.css -o ./src/tailwind.css",
+    "css:watch": "tailwindcss -i ./src/styles/index.css -o ./src/tailwind.css --watch",
+    "check:tailwind": "npm run css:build && git diff --exit-code -- src/tailwind.css",
+    "build": "npm run css:build && vite build",
+    "prepare": "node ./scripts/setup-git-hooks.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -24,6 +29,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "npm-run-all": "^4.1.5",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
     "vite": "^7.1.2"
