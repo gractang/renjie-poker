@@ -1,20 +1,22 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 @layer base {
   :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
     line-height: 1.5;
     font-weight: 400;
 
     color-scheme: light dark;
-    --color-text:       #1d3557;
-    --color-background: #a8dadc;
-    --color-neutral:    #f1faee;
-    --color-accent:     #457b9d;
-    --color-selected:  #457b9d;
-    --color-suit-red:    #dc2626; /* red-600-ish */
-    --color-suit-black:  #000000; /* light-mode black */
-    /* --color-disabled:  #7a869c; */
+    --color-text:        #2c2418;
+    --color-text-muted:  #8a7e6e;
+    --color-background:  #f7f3ec;
+    --color-surface:     #fffdf9;
+    --color-border:      #e4ddd2;
+    --color-accent:      #40916c;
+    --color-selected:    #40916c;
+    --color-suit-red:    #b5342a;
+    --color-suit-black:  #2c2418;
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -24,18 +26,18 @@
 
   .dark {
     color-scheme: dark;
-    /* Dark theme */
-    --color-text:       #f1faee;
-    --color-background: #1d3557;
-    --color-neutral:    #55656f;
-    --color-accent:     #457b9d;
-    --color-selected:  #457b9d;
-    --color-suit-red:    #f87171; /* red-400-ish for dark */
-    --color-suit-black:  #ffffff; /* dark-mode white */
-    /* --color-disabled: #113a54; */
-    }
+    --color-text:        #e8e2d6;
+    --color-text-muted:  #8a7e6e;
+    --color-background:  #1a1611;
+    --color-surface:     #242018;
+    --color-border:      #3a3428;
+    --color-accent:      #52b788;
+    --color-selected:    #52b788;
+    --color-suit-red:    #e07060;
+    --color-suit-black:  #e8e2d6;
+  }
 
-    html, body {
+  html, body {
     color: var(--color-text);
     background-color: var(--color-background);
   }
@@ -43,62 +45,29 @@
 
 @layer components {
   .btn-theme {
-    @apply border-0 inline-flex items-center gap-2 px-3 py-1 rounded-xl border transition;
-    @apply bg-[var(--color-neutral)] text-[var(--color-text)];
-    @apply hover:bg-[var(--color-accent)] hover:text-[var(--color-background)];
-    /* Mobile: slightly larger but proportional */
-    @media (max-width: 768px) {
-      @apply px-3 py-2 min-h-[40px] text-sm;
-    }
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm cursor-pointer;
+    @apply border border-[var(--color-border)] bg-transparent text-[var(--color-text)];
+    @apply transition-colors duration-150;
+    @apply hover:bg-[var(--color-accent)] hover:text-[var(--color-background)] hover:border-[var(--color-accent)];
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)];
+    font-family: 'DM Mono', monospace;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 
-  .card-display-theme{
-    @apply w-12 h-16 m-1 rounded-xl border-0 flex items-center justify-center;
-    @apply bg-[var(--color-neutral)];
-    /* Mobile: larger cards for better visibility */
+  .card-display-theme {
+    @apply w-12 h-16 rounded flex items-center justify-center;
+    @apply bg-[var(--color-surface)] border border-[var(--color-border)];
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
     @media (max-width: 768px) {
-      @apply w-14 h-20 text-lg;
+      @apply w-14 h-20 text-base;
     }
   }
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-/* button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #f1faee;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color; */
-/* } */
