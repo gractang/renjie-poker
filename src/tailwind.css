@@ -557,14 +557,11 @@
   .border-\[var\(--color-selected\)\] {
     border-color: var(--color-selected);
   }
+  .border-\[var\(--color-suit-red\)\] {
+    border-color: var(--color-suit-red);
+  }
   .border-\[var\(--color-text\)\] {
     border-color: var(--color-text);
-  }
-  .bg-\[color-mix\(in_srgb\,var\(--color-accent\)_8\%\,var\(--color-surface\)\)\] {
-    background-color: var(--color-accent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in srgb,var(--color-accent) 8%,var(--color-surface));
-    }
   }
   .bg-\[color-mix\(in_srgb\,var\(--color-accent\)_10\%\,var\(--color-surface\)\)\] {
     background-color: var(--color-accent);
@@ -582,6 +579,18 @@
     background-color: var(--color-selected);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in srgb,var(--color-selected) 18%,var(--color-surface));
+    }
+  }
+  .bg-\[color-mix\(in_srgb\,var\(--color-suit-red\)_12\%\,var\(--color-surface\)\)\] {
+    background-color: var(--color-suit-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in srgb,var(--color-suit-red) 12%,var(--color-surface));
+    }
+  }
+  .bg-\[color-mix\(in_srgb\,var\(--color-suit-red\)_14\%\,transparent\)\] {
+    background-color: var(--color-suit-red);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in srgb,var(--color-suit-red) 14%,transparent);
     }
   }
   .bg-\[var\(--color-accent\)\] {
