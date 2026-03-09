@@ -58,6 +58,7 @@ function StatCard({ label, value, detail }) {
 
 function HistoryRow({ row }) {
   const won = row.outcome === "win";
+  const isLoss = !won && !row.dealer_won_tie;
 
   return (
     <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
@@ -75,7 +76,9 @@ function HistoryRow({ row }) {
           className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
             won
               ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-              : "border-[var(--color-border)] text-[var(--color-text-muted)]"
+              : isLoss
+                ? "border-[var(--color-suit-red)] text-[var(--color-suit-red)]"
+                : "border-[var(--color-border)] text-[var(--color-text-muted)]"
           }`}
           style={{ fontFamily: "'DM Mono', monospace" }}
         >

@@ -77,7 +77,7 @@ function UserIcon({ className = "" }) {
   );
 }
 
-function FlyingCard({ card, from, to, delay, duration }) {
+function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
   const [phase, setPhase] = useState("hidden");
 
   useEffect(() => {
@@ -98,7 +98,7 @@ function FlyingCard({ card, from, to, delay, duration }) {
 
   return (
     <div
-      className="card-display-theme text-sm"
+      className={`card-display-theme text-sm ${highlight ? "ring-2 ring-[var(--color-selected)]" : ""}`}
       style={{
         position: "fixed",
         left: pos.x,
@@ -140,7 +140,7 @@ function HandHeader({ label, countLabel, handName, resultTag = null }) {
               "rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]",
               resultTag === "winner"
                 ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_16%,transparent)] text-[var(--color-accent)]"
-                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]",
+                : "border-[var(--color-suit-red)] bg-[color-mix(in_srgb,var(--color-suit-red)_14%,transparent)] text-[var(--color-suit-red)]",
             ].join(" ")}
             style={{ fontFamily: "'DM Mono', monospace" }}
           >
@@ -170,16 +170,21 @@ function WinnerBanner({ winner, playerEval, dealerEval }) {
   if (!winner || !playerEval || !dealerEval) return null;
 
   const isTie = playerEval.score === dealerEval.score;
+  const isDealerWin = winner === "dealer";
   const winnerLabel = winner === "player" ? "Player wins" : "Dealer wins";
+  const bannerToneClass = isDealerWin
+    ? "border-[var(--color-suit-red)] bg-[color-mix(in_srgb,var(--color-suit-red)_12%,var(--color-surface))]"
+    : "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_10%,var(--color-surface))]";
+  const winnerLabelClass = isDealerWin ? "text-[var(--color-suit-red)]" : "text-[var(--color-accent)]";
 
   return (
     <section
       aria-live="polite"
-      className="mb-4 rounded-[20px] border border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_10%,var(--color-surface))] px-4 py-3"
+      className={`mb-4 rounded-[20px] border px-4 py-3 ${bannerToneClass}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div
-          className="text-sm uppercase tracking-[0.2em] text-[var(--color-accent)]"
+          className={`text-sm uppercase tracking-[0.2em] ${winnerLabelClass}`}
           style={{ fontFamily: "'DM Mono', monospace" }}
         >
           {winnerLabel}
@@ -395,6 +400,7 @@ export default function App() {
           to,
           delay: result.dealerCards.length * CARD_DELAY,
           duration: CARD_DURATION,
+          highlight: Boolean(result.isGameOver),
         });
       }
     }
@@ -701,7 +707,7 @@ export default function App() {
               resultTag={gameOver ? (winner === "player" ? "winner" : "loser") : null}
             />
             <div ref={playerHandRef}>
-              <HandRow cards={player} highlightBest={playerEval?.bestFive || null} />
+              <HandRow cards={player} highlightBest={player} />
             </div>
             {visibleDeckCount > 0 && (
               <div className="mt-3 flex items-start">
@@ -759,6 +765,7 @@ export default function App() {
                 delay={fc.delay}
                 duration={fc.duration}
                 from={fc.from}
+                highlight={fc.highlight}
                 to={fc.to}
               />
             ))}
@@ -815,7 +822,7 @@ export default function App() {
               </div>
               {gameOver && (
                 <div
-                  className="mb-3 rounded-xl border border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_8%,var(--color-surface))] px-3 py-2 text-[11px] text-[var(--color-text)]"
+                  className="mb-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[11px] text-[var(--color-text)]"
                   style={{ fontFamily: "'DM Mono', monospace" }}
                 >
                   Hand complete. Start a new game to select from the deck again.
