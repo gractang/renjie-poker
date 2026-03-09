@@ -130,7 +130,7 @@ export async function updateProfileSettings(userId, updates) {
   return data;
 }
 
-export async function fetchLeaderboard(limit = 12) {
+export async function fetchLeaderboard(limit = 50) {
   const client = requireSupabase();
   const { data, error } = await client
     .from("leaderboard_candidates")

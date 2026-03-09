@@ -1,44 +1,115 @@
+import { useState, useRef, useEffect, useCallback } from "react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
+import useSupabaseAuth from "../hooks/useSupabaseAuth";
+import { saveCompletedGameRecord } from "../lib/accountData";
 import HandRow from "../components/HandRow";
 import SelectionGrid from "../components/SelectionGrid";
 import SelectionButtons from "../components/SelectionButtons";
 import ThemeToggle from "../components/ThemeToggle";
 import Modal from "../components/Modal";
 import RulesContent from "../components/RulesContent";
+import AccountModal from "../components/AccountModal";
+import HistoryPage from "../components/HistoryPage";
+import LeaderboardPage from "../components/LeaderboardPage";
+import SiteFooter from "../components/SiteFooter";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+const HAND_CARD_WIDTH = 48;
+const HAND_CARD_HEIGHT = 64;
+const HAND_CARD_GAP = 4;
+const CARD_DELAY = 210;
+const CARD_DURATION = 460;
+
+function getHashRoute() {
+  if (typeof window === "undefined") return "";
+
+  const hash = window.location.hash.toLowerCase();
+
+  if (hash === "#leaderboard") return "leaderboard";
+  if (hash === "#history") return "history";
+
+  return "";
+}
+
+function clearHashRoute() {
+  if (typeof window === "undefined") return;
+
+  window.history.pushState({}, "", `${window.location.pathname}${window.location.search}`);
+}
+
+function TrophyIcon({ className = "" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+    >
+      <path d="M8 21h8" />
+      <path d="M12 17v4" />
+      <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" />
+      <path d="M7 6H4a3 3 0 0 0 3 5" />
+      <path d="M17 6h3a3 3 0 0 1-3 5" />
+    </svg>
+  );
+}
+
+function UserIcon({ className = "" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+      <path d="M4 20a8 8 0 0 1 16 0" />
+    </svg>
+  );
+}
 
 function FlyingCard({ card, from, to, delay, duration }) {
-  const [phase, setPhase] = useState('hidden');
+  const [phase, setPhase] = useState("hidden");
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('visible'), delay);
-    const t2 = setTimeout(() => setPhase('flying'), delay + 50);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t1 = setTimeout(() => setPhase("visible"), delay);
+    const t2 = setTimeout(() => setPhase("flying"), delay + 50);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [delay]);
 
-  if (phase === 'hidden') return null;
+  if (phase === "hidden") return null;
 
-  const isFlying = phase === 'flying';
+  const isFlying = phase === "flying";
   const pos = isFlying ? to : from;
-  const isRed = card.suitKey === 'H' || card.suitKey === 'D';
+  const isRed = card.suitKey === "H" || card.suitKey === "D";
 
   return (
     <div
       className="card-display-theme text-sm"
       style={{
-        position: 'fixed',
+        position: "fixed",
         left: pos.x,
         top: pos.y,
         zIndex: 100,
         transition: isFlying
           ? `left ${duration}ms cubic-bezier(0.22, 1, 0.36, 1), top ${duration}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${duration}ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow ${duration}ms ease`
-          : 'none',
-        transform: isFlying ? 'scale(1)' : 'scale(1.12)',
+          : "none",
+        transform: isFlying ? "scale(1)" : "scale(1.12)",
         boxShadow: isFlying
-          ? '0 1px 3px rgba(0,0,0,0.1)'
-          : '0 8px 20px rgba(0,0,0,0.2)',
-        pointerEvents: 'none',
+          ? "0 1px 3px rgba(0,0,0,0.1)"
+          : "0 8px 20px rgba(0,0,0,0.2)",
+        pointerEvents: "none",
       }}
     >
       <span className={`font-medium ${isRed ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
@@ -51,27 +122,172 @@ function FlyingCard({ card, from, to, delay, duration }) {
   );
 }
 
+function HandHeader({ label, countLabel, handName }) {
+  return (
+    <div className="mb-2 flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div
+          className="text-xs uppercase tracking-widest text-[var(--color-text-muted)]"
+          style={{ fontFamily: "'DM Mono', monospace" }}
+        >
+          {label}
+        </div>
+        {handName && (
+          <div
+            className="text-[11px] text-[var(--color-text-muted)]"
+            style={{ fontFamily: "'DM Mono', monospace" }}
+          >
+            hand: {handName}
+          </div>
+        )}
+      </div>
+      <div
+        className="shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]"
+        style={{ fontFamily: "'DM Mono', monospace" }}
+      >
+        {countLabel}
+      </div>
+    </div>
+  );
+}
+
+function FullScreenNotice({ title, message, onBack }) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-[var(--color-background)] text-[var(--color-text)]">
+      <header className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
+        <div className="flex items-center gap-4">
+          <button className="btn-theme" onClick={onBack} type="button">
+            &larr; back
+          </button>
+          <h1
+            className="text-sm uppercase tracking-widest text-[var(--color-text-muted)]"
+            style={{ fontFamily: "'DM Mono', monospace" }}
+          >
+            {title}
+          </h1>
+        </div>
+      </header>
+
+      <div className="flex flex-1 items-center justify-center px-5 py-6">
+        <div className="w-full max-w-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-6 text-sm text-[var(--color-text-muted)]">
+          {message}
+        </div>
+      </div>
+
+      <SiteFooter className="border-t border-[var(--color-border)]" />
+    </div>
+  );
+}
+
 export default function App() {
   const eng = useRenjiePokerEngine();
   const {
-    player, dealer, message, selection, remainingIds,
-    playerEval, dealerEval
+    player,
+    dealer,
+    message,
+    selection,
+    remainingIds,
+    playerEval,
+    dealerEval,
+    completedGameSummary,
   } = eng;
+  const auth = useSupabaseAuth();
 
   const [showRules, setShowRules] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [route, setRoute] = useState(() => getHashRoute());
+  const [accountRefreshToken, setAccountRefreshToken] = useState(0);
+  const [syncStatus, setSyncStatus] = useState({ state: "idle", message: "" });
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
+  const [isSelectorOpen, setIsSelectorOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
   const [buttonFlash, setButtonFlash] = useState({});
   const [flyingCards, setFlyingCards] = useState([]);
   const [isDealing, setIsDealing] = useState(false);
-  const dealButtonRef = useRef(null);
+
   const deckRef = useRef(null);
   const playerHandRef = useRef(null);
   const dealerHandRef = useRef(null);
+  const commitTimeoutRef = useRef(null);
+  const lastSyncedKeyRef = useRef(null);
+  const syncingKeyRef = useRef(null);
+
+  const clearPendingCommit = useCallback(() => {
+    if (commitTimeoutRef.current) {
+      clearTimeout(commitTimeoutRef.current);
+      commitTimeoutRef.current = null;
+    }
+  }, []);
+
+  const getCardTarget = useCallback((handEl, slotIndex) => {
+    const rowEl = handEl?.querySelector("[data-hand-row]");
+    const sampleCardEl = handEl?.querySelector("[data-hand-card]");
+
+    if (!rowEl) {
+      return null;
+    }
+
+    const rowRect = rowEl.getBoundingClientRect();
+    const cardRect = sampleCardEl?.getBoundingClientRect();
+    const rowStyles = window.getComputedStyle(rowEl);
+    const gapX = Number.parseFloat(rowStyles.columnGap || rowStyles.gap || `${HAND_CARD_GAP}`) || HAND_CARD_GAP;
+    const gapY = Number.parseFloat(rowStyles.rowGap || rowStyles.gap || `${HAND_CARD_GAP}`) || HAND_CARD_GAP;
+    const width = cardRect?.width || HAND_CARD_WIDTH;
+    const height = cardRect?.height || HAND_CARD_HEIGHT;
+    const wraps = rowEl.dataset.wrap === "true";
+
+    if (wraps) {
+      const columns = Math.max(1, Math.floor((rowRect.width + gapX) / (width + gapX)));
+      const column = slotIndex % columns;
+      const row = Math.floor(slotIndex / columns);
+
+      return {
+        x: rowRect.left + column * (width + gapX),
+        y: rowRect.top + row * (height + gapY),
+      };
+    }
+
+    return {
+      x: rowRect.left + slotIndex * (width + gapX),
+      y: rowRect.top + Math.max(0, (rowRect.height - height) / 2),
+    };
+  }, []);
 
   const handleReset = useCallback(() => {
+    clearPendingCommit();
     setFlyingCards([]);
     setIsDealing(false);
     eng.reset();
-  }, [eng]);
+  }, [clearPendingCommit, eng]);
+
+  const handleCloseRoute = useCallback(() => {
+    clearHashRoute();
+    setRoute("");
+  }, []);
+
+  const openHistoryPage = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.location.hash = "history";
+    }
+    setRoute("history");
+  }, []);
+
+  const openLeaderboardPage = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const targetUrl = `${window.location.pathname}${window.location.search}#leaderboard`;
+    const nextWindow = window.open(targetUrl, "_blank", "noopener,noreferrer");
+
+    if (!nextWindow) {
+      window.location.hash = "leaderboard";
+      setRoute("leaderboard");
+    }
+  }, []);
 
   const handleAnimatedDeal = useCallback(() => {
     if (isDealing) return;
@@ -94,259 +310,479 @@ export default function App() {
     setIsDealing(true);
 
     const deckRect = deckEl.getBoundingClientRect();
-    const playerRect = playerEl.getBoundingClientRect();
-    const dealerRect = dealerEl.getBoundingClientRect();
-
     const from = {
-      x: deckRect.left + deckRect.width / 2 - 24,
-      y: deckRect.top + deckRect.height / 2 - 32,
+      x: deckRect.left + deckRect.width / 2 - HAND_CARD_WIDTH / 2,
+      y: deckRect.top + deckRect.height / 2 - HAND_CARD_HEIGHT / 2,
     };
-
-    const CARD_DELAY = 160;
-    const CARD_DURATION = 380;
 
     const cards = [];
 
-    // Dealer cards (burns)
     result.dealerCards.forEach((card, i) => {
-      const idx = dealer.length + i;
+      const to = getCardTarget(dealerEl, dealer.length + i);
+      if (!to) return;
+
       cards.push({
         id: `d-${Date.now()}-${i}`,
         card,
         from,
-        to: {
-          x: dealerRect.left + Math.min(idx * 52, Math.max(0, dealerRect.width - 48)),
-          y: dealerRect.top,
-        },
+        to,
         delay: i * CARD_DELAY,
         duration: CARD_DURATION,
       });
     });
 
-    // Player card
     if (result.playerCard) {
-      cards.push({
-        id: `p-${Date.now()}`,
-        card: result.playerCard,
-        from,
-        to: {
-          x: playerRect.left + player.length * 52,
-          y: playerRect.top,
-        },
-        delay: result.dealerCards.length * CARD_DELAY,
-        duration: CARD_DURATION,
-      });
+      const to = getCardTarget(playerEl, player.length);
+      if (to) {
+        cards.push({
+          id: `p-${Date.now()}`,
+          card: result.playerCard,
+          from,
+          to,
+          delay: result.dealerCards.length * CARD_DELAY,
+          duration: CARD_DURATION,
+        });
+      }
     }
 
-    // TopUp cards (when game ends, dealer gets filled to 8)
-    if (result.topUpCards && result.topUpCards.length > 0) {
+    if (result.topUpCards?.length) {
       const dealerCountAfterDeal = dealer.length + result.dealerCards.length;
       const topUpStartDelay = cards.length * CARD_DELAY + 350;
 
       result.topUpCards.forEach((card, i) => {
-        const idx = dealerCountAfterDeal + i;
+        const to = getCardTarget(dealerEl, dealerCountAfterDeal + i);
+        if (!to) return;
+
         cards.push({
           id: `t-${Date.now()}-${i}`,
           card,
           from,
-          to: {
-            x: dealerRect.left + Math.min(idx * 52, Math.max(0, dealerRect.width - 48)),
-            y: dealerRect.top,
-          },
+          to,
           delay: topUpStartDelay + i * CARD_DELAY,
           duration: CARD_DURATION,
         });
       });
     }
 
+    if (cards.length === 0) {
+      setIsDealing(false);
+      eng.deal();
+      return;
+    }
+
     setFlyingCards(cards);
 
     const lastDelay = cards.length > 0 ? cards[cards.length - 1].delay : 0;
-    setTimeout(() => {
+    clearPendingCommit();
+    commitTimeoutRef.current = setTimeout(() => {
       eng.commitDeal(result);
       setFlyingCards([]);
       setIsDealing(false);
+      commitTimeoutRef.current = null;
     }, lastDelay + CARD_DURATION + 60);
-  }, [eng, isDealing, player.length, dealer.length]);
+  }, [clearPendingCommit, dealer.length, eng, getCardTarget, isDealing, player.length]);
 
-  // Handle keyboard shortcuts
+  useEffect(() => clearPendingCommit, [clearPendingCommit]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const syncViewport = (event) => {
+      const desktop = event?.matches ?? mediaQuery.matches;
+      setIsDesktop(desktop);
+      setIsSelectorOpen((current) => (desktop ? true : current));
+    };
+
+    syncViewport();
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", syncViewport);
+      return () => mediaQuery.removeEventListener("change", syncViewport);
+    }
+
+    mediaQuery.addListener(syncViewport);
+    return () => mediaQuery.removeListener(syncViewport);
+  }, []);
+
+  useEffect(() => {
+    const syncRoute = () => setRoute(getHashRoute());
+
+    syncRoute();
+    window.addEventListener("hashchange", syncRoute);
+
+    return () => window.removeEventListener("hashchange", syncRoute);
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop && player.length > 0 && !isDealing) {
+      setIsSelectorOpen(false);
+    }
+  }, [isDesktop, isDealing, player.length]);
+
+  useEffect(() => {
+    if (!completedGameSummary) {
+      syncingKeyRef.current = null;
+      setSyncStatus({ state: "idle", message: "" });
+      return;
+    }
+
+    if (!auth.hasSupabaseConfig) {
+      return;
+    }
+
+    if (!auth.user) {
+      setSyncStatus({
+        state: "guest",
+        message: "Sign in to save this completed hand to your history.",
+      });
+      return;
+    }
+
+    const syncKey = `${auth.user.id}:${completedGameSummary.localGameId}`;
+
+    if (lastSyncedKeyRef.current === syncKey || syncingKeyRef.current === syncKey) {
+      return;
+    }
+
+    let cancelled = false;
+    syncingKeyRef.current = syncKey;
+    setSyncStatus({ state: "syncing", message: "Saving completed hand..." });
+
+    saveCompletedGameRecord({
+      userId: auth.user.id,
+      summary: completedGameSummary,
+    })
+      .then(() => {
+        if (cancelled) return;
+
+        lastSyncedKeyRef.current = syncKey;
+        syncingKeyRef.current = null;
+        setSyncStatus({
+          state: "saved",
+          message: "Last hand saved to your history.",
+        });
+        setAccountRefreshToken((value) => value + 1);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        syncingKeyRef.current = null;
+        setSyncStatus({
+          state: "error",
+          message: error.message ?? "Could not save completed hand.",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.hasSupabaseConfig, auth.user, completedGameSummary]);
+
   useEffect(() => {
     const handleKeyPress = (event) => {
       const key = event.key.toLowerCase();
 
-      if (showRules || event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      if (
+        showRules ||
+        showAccount ||
+        route ||
+        event.target.tagName === "INPUT" ||
+        event.target.tagName === "TEXTAREA"
+      ) {
         return;
       }
 
       const flashButton = (buttonId, action, duration = 200) => {
-        setButtonFlash(prev => ({ ...prev, [buttonId]: true }));
+        setButtonFlash((prev) => ({ ...prev, [buttonId]: true }));
         setTimeout(() => {
-          setButtonFlash(prev => ({ ...prev, [buttonId]: false }));
+          setButtonFlash((prev) => ({ ...prev, [buttonId]: false }));
         }, duration);
         action();
       };
 
-      if (key === 'enter') {
+      if (key === "enter") {
         if (selection.size > 0 && player.length < 5 && !isDealing) {
-          flashButton('deal', () => handleAnimatedDeal(), 150);
+          flashButton("deal", () => handleAnimatedDeal(), 150);
         } else {
-          flashButton('deal', () => {}, 300);
+          flashButton("deal", () => {}, 300);
         }
         return;
       }
 
-      if (['s', 'h', 'c', 'd'].includes(key)) {
+      if (["s", "h", "c", "d"].includes(key)) {
         const suit = key.toUpperCase();
         flashButton(`suit-${suit}`, () => eng.selectSuit(suit));
         return;
       }
 
-      if (['2', '3', '4', '5', '6', '7', '8', '9', 't', 'j', 'q', 'k', 'a'].includes(key)) {
+      if (["2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k", "a"].includes(key)) {
         const rank = key.toUpperCase();
         flashButton(`rank-${rank}`, () => eng.selectRank(rank));
         return;
       }
 
-      if (key === '0') { flashButton('selectAll', () => eng.selectAll()); return; }
-      if (key === 'x') { flashButton('clear', () => eng.clearSelection()); return; }
-      if (key === 'n') { flashButton('newGame', () => handleReset()); return; }
-      if (key === '?') { flashButton('help', () => setShowRules(true)); return; }
+      if (key === "0") {
+        flashButton("selectAll", () => eng.selectAll());
+        return;
+      }
+      if (key === "x") {
+        flashButton("clear", () => eng.clearSelection());
+        return;
+      }
+      if (key === "n") {
+        flashButton("newGame", () => handleReset());
+        return;
+      }
+      if (key === "?") {
+        flashButton("help", () => setShowRules(true));
+      }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [selection.size, player.length, showRules, eng, isDealing, handleAnimatedDeal, handleReset]);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [selection.size, player.length, showRules, showAccount, route, eng, isDealing, handleAnimatedDeal, handleReset]);
+
+  if (route === "leaderboard") {
+    return <LeaderboardPage onBack={handleCloseRoute} standalone />;
+  }
+
+  if (route === "history") {
+    if (auth.loading) {
+      return (
+        <FullScreenNotice
+          title="Hand History"
+          message="Loading account state..."
+          onBack={handleCloseRoute}
+        />
+      );
+    }
+
+    if (!auth.user) {
+      return (
+        <FullScreenNotice
+          title="Hand History"
+          message="Sign in to view your saved hand history."
+          onBack={handleCloseRoute}
+        />
+      );
+    }
+
+    return <HistoryPage onBack={handleCloseRoute} userId={auth.user.id} />;
+  }
 
   const deckCount = remainingIds.size;
+  const visibleDeckCount = Math.max(0, deckCount - flyingCards.length);
+  const selectorSummary = `${selection.size} selected`;
+  const selectorDeckLabel = `${visibleDeckCount} live`;
 
   return (
-    <div className="min-h-screen flex flex-col max-w-5xl mx-auto">
-      {/* Header */}
-      <header className="px-5 pt-5 pb-3 flex items-center justify-between">
-        <h1 className="text-lg tracking-tight" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
-          renjie poker
+    <div className="min-h-screen flex flex-col max-w-5xl lg:max-w-6xl mx-auto">
+      <header className="flex items-start justify-between gap-3 px-4 pt-4 pb-2 md:items-center md:px-5 md:pt-5 md:pb-3">
+        <h1 className="shrink-0 text-base tracking-tight md:text-lg" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
+          <a href="/" className="hover:opacity-80 transition-opacity" title="Start a new game">
+            renjie poker
+          </a>
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
           <ThemeToggle />
           <button
-            className={`btn-theme ${buttonFlash.newGame ? 'bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
-            onClick={handleReset}
-          >
-            new game
-          </button>
-          <button
-            className={`btn-theme ${buttonFlash.help ? 'bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
+            className={`btn-theme ${buttonFlash.help ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
             onClick={() => setShowRules(true)}
+            title="Help"
+            type="button"
           >
             ?
+          </button>
+          <a
+            className="btn-theme"
+            href="#leaderboard"
+            rel="noopener noreferrer"
+            target="_blank"
+            title="View public leaderboard"
+          >
+            <TrophyIcon className="h-4 w-4" />
+          </a>
+          <button
+            className="btn-theme"
+            onClick={() => setShowAccount(true)}
+            title="Profile"
+            type="button"
+          >
+            <UserIcon className="h-4 w-4" />
+          </button>
+          <button
+            className={`btn-theme ${buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
+            onClick={handleReset}
+            type="button"
+          >
+            new game
           </button>
         </div>
       </header>
 
-      {/* Status */}
-      <main className="flex-1 flex flex-col px-5">
-        <div className="text-xs text-[var(--color-text-muted)] mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
+      <main className="flex-1 flex flex-col px-4 md:px-5">
+        <div className="mb-3 text-xs text-[var(--color-text-muted)] md:mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
           {message}
         </div>
 
-        {/* Hands + Deck */}
-        <section className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6 items-start">
-          {/* Player hand */}
+        <section className="mb-4 flex flex-col items-start gap-3 md:mb-6 md:flex-row md:gap-6">
           <div className="flex-1 min-w-0">
-            <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-2" style={{ fontFamily: "'DM Mono', monospace" }}>
-              Player · {player.length}/5
-              {playerEval && <span className="ml-2 normal-case tracking-normal">{playerEval.name}</span>}
-            </div>
+            <HandHeader
+              countLabel={`${player.length}/5 cards`}
+              handName={playerEval?.name}
+              label="Player"
+            />
             <div ref={playerHandRef}>
               <HandRow cards={player} highlightBest={playerEval?.bestFive || null} />
             </div>
+            {visibleDeckCount > 0 && (
+              <div className="mt-3 flex items-start">
+                <div
+                  ref={deckRef}
+                  className="deck-shell flex items-center gap-3 py-2 px-3"
+                >
+                  <div className="relative shrink-0" style={{ width: 52, height: 68 }}>
+                    {visibleDeckCount > 2 && (
+                      <div className="card-back absolute rounded" style={{ top: 0, left: 0 }} />
+                    )}
+                    {visibleDeckCount > 1 && (
+                      <div className="card-back absolute rounded" style={{ top: 2, left: 2 }} />
+                    )}
+                    <div className="card-back absolute rounded" style={{ top: 4, left: 4 }} />
+                  </div>
+                  <div className="leading-tight">
+                    <div
+                      className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]"
+                      style={{ fontFamily: "'DM Mono', monospace" }}
+                    >
+                      deck
+                    </div>
+                    <div
+                      className="text-xs tabular-nums text-[var(--color-text)]"
+                      style={{ fontFamily: "'DM Mono', monospace" }}
+                    >
+                      {visibleDeckCount} live
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Deck */}
-          {deckCount > 0 && (
-            <div
-              ref={deckRef}
-              className="flex flex-row md:flex-col items-center justify-center gap-2 py-1 md:pt-6 shrink-0 self-center md:self-start"
-            >
-              <div className="relative" style={{ width: 52, height: 68 }}>
-                {deckCount > 2 && (
-                  <div className="card-back absolute rounded" style={{ top: 0, left: 0 }} />
-                )}
-                {deckCount > 1 && (
-                  <div className="card-back absolute rounded" style={{ top: 2, left: 2 }} />
-                )}
-                <div className="card-back absolute rounded" style={{ top: 4, left: 4 }} />
-              </div>
-              <span
-                className="text-[10px] text-[var(--color-text-muted)] tabular-nums"
-                style={{ fontFamily: "'DM Mono', monospace" }}
-              >
-                {deckCount}
-              </span>
-            </div>
-          )}
-
-          {/* Dealer hand */}
           <div className="flex-1 min-w-0">
-            <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-2" style={{ fontFamily: "'DM Mono', monospace" }}>
-              Dealer · {dealer.length}
-              {dealerEval && <span className="ml-2 normal-case tracking-normal">{dealerEval.name}</span>}
-            </div>
+            <HandHeader
+              countLabel={`${dealer.length} cards`}
+              handName={dealerEval?.name}
+              label="Dealer"
+            />
             <div ref={dealerHandRef}>
-              <HandRow cards={dealer} highlightBest={dealerEval?.bestFive || null} />
+              <HandRow cards={dealer} highlightBest={dealerEval?.bestFive || null} wrap />
             </div>
           </div>
         </section>
 
-        {/* Flying cards overlay */}
         {flyingCards.length > 0 && (
           <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 100 }}>
-            {flyingCards.map(fc => (
+            {flyingCards.map((fc) => (
               <FlyingCard
                 key={fc.id}
                 card={fc.card}
-                from={fc.from}
-                to={fc.to}
                 delay={fc.delay}
                 duration={fc.duration}
+                from={fc.from}
+                to={fc.to}
               />
             ))}
           </div>
         )}
 
-        {/* Selection panel */}
-        <section className="mt-auto sticky bottom-0 border-t border-[var(--color-border)] bg-[var(--color-background)]/90 backdrop-blur-sm">
-          <div className="py-4">
-            <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3" style={{ fontFamily: "'DM Mono', monospace" }}>
-              Select from deck
-            </div>
-            <SelectionButtons
-              onSelectSuit={eng.selectSuit}
-              onSelectRank={eng.selectRank}
-              onSelectAll={eng.selectAll}
-              onClearSelection={eng.clearSelection}
-              onDeal={handleAnimatedDeal}
-              hasSelection={selection.size > 0}
-              canDeal={player.length < 5 && !isDealing}
-              buttonFlash={buttonFlash}
-              dealButtonRef={dealButtonRef}
-            />
-            <div className="h-3" />
-            <div className="max-h-[45vh] overflow-y-auto">
-              <SelectionGrid
-                remainingIds={remainingIds}
-                selection={selection}
-                onToggle={eng.toggleSelect}
+        <section className="sticky bottom-0 z-20 mt-auto border-t border-[var(--color-border)] bg-[var(--color-background)]/92 backdrop-blur-md">
+          <div className="py-3 md:py-4">
+            <button
+              aria-controls="selection-panel"
+              aria-expanded={isSelectorOpen}
+              className="flex w-full items-center justify-between gap-3 md:hidden"
+              onClick={() => setIsSelectorOpen((current) => !current)}
+              type="button"
+            >
+              <div className="min-w-0 text-left">
+                <div
+                  className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                >
+                  Select from deck
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2 text-[11px]" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[var(--color-text)]">
+                    {selectorSummary}
+                  </span>
+                  <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
+                    {selectorDeckLabel}
+                  </span>
+                  <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
+                    {player.length}/5 cards
+                  </span>
+                </div>
+              </div>
+              <span
+                aria-hidden="true"
+                className="btn-theme min-w-[74px] justify-center"
+              >
+                {isSelectorOpen ? "close" : "open"}
+              </span>
+            </button>
+
+            <div
+              className={[
+                isDesktop || isSelectorOpen ? "block" : "hidden",
+                !isDesktop
+                  ? "mt-3 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface)]/96 px-3 py-3 shadow-[0_12px_28px_color-mix(in_srgb,var(--color-text)_10%,transparent)]"
+                  : "",
+              ].join(" ")}
+              id="selection-panel"
+            >
+              <div className="hidden text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3 md:block" style={{ fontFamily: "'DM Mono', monospace" }}>
+                Select from deck
+              </div>
+              <SelectionButtons
+                buttonFlash={buttonFlash}
+                canDeal={player.length < 5 && !isDealing}
+                disabled={isDealing}
+                hasSelection={selection.size > 0}
+                onClearSelection={eng.clearSelection}
+                onDeal={handleAnimatedDeal}
+                onSelectAll={eng.selectAll}
+                onSelectRank={eng.selectRank}
                 onSelectSuit={eng.selectSuit}
               />
+              <div className="h-3" />
+              <div className={`max-h-[50vh] overflow-y-auto pr-1 transition-opacity md:max-h-[45vh] ${isDealing ? "opacity-60" : ""}`}>
+                <SelectionGrid
+                  disabled={isDealing}
+                  onToggle={eng.toggleSelect}
+                  remainingIds={remainingIds}
+                  selection={selection}
+                />
+              </div>
             </div>
           </div>
         </section>
       </main>
 
+      <SiteFooter className="pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-5" />
+
       <Modal open={showRules} onClose={() => setShowRules(false)} title="How to Play">
         <RulesContent />
       </Modal>
+
+      <AccountModal
+        auth={auth}
+        onClose={() => setShowAccount(false)}
+        onOpenHistory={openHistoryPage}
+        onOpenLeaderboard={openLeaderboardPage}
+        open={showAccount}
+        refreshToken={accountRefreshToken}
+        syncStatus={syncStatus}
+      />
     </div>
   );
 }
