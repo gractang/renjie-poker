@@ -68,7 +68,7 @@ export default function App() {
   }, [selection.size, player.length, showRules, eng]);
 
   return (
-    <div className="min-h-screen flex flex-col max-w-5xl mx-auto">
+    <div className="min-h-screen flex flex-col max-w-5xl lg:max-w-6xl mx-auto">
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <h1 className="text-lg tracking-tight" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
