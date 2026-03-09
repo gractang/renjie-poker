@@ -1,0 +1,142 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
+<< /Length 2838 >>
+stream
+1 1 1 rg
+0 0 612 792 re f
+0 0 0 rg
+BT
+/F2 20 Tf 48 742 Td
+(Renjie Poker - App Summary) Tj
+ET
+BT
+/F2 12 Tf 48 706 Td
+(What It Is) Tj
+ET
+BT
+/F1 10 Tf 48 692 Td
+(Renjie Poker is a browser-based React game where the player builds a 5-card hand by selecting subsets from the remaining deck.) Tj
+ET
+BT
+/F1 10 Tf 48 678 Td
+(The dealer receives all non-matching cards dealt during each turn; final hands are scored with poker rules and ties go to dealer.) Tj
+ET
+BT
+/F2 12 Tf 48 658 Td
+(Who It Is For) Tj
+ET
+BT
+/F1 10 Tf 60 644 Td
+(- Primary persona \(explicit\): Not found in repo.) Tj
+ET
+BT
+/F1 10 Tf 60 630 Td
+(- Likely user \(inferred from UI/rules\): players practicing probability and decision-making in a custom poker variant.) Tj
+ET
+BT
+/F2 12 Tf 48 610 Td
+(What It Does) Tj
+ET
+BT
+/F1 10 Tf 60 596 Td
+(- Interactive card subset selection by suit, rank, select-all, and clear actions.) Tj
+ET
+BT
+/F1 10 Tf 60 582 Td
+(- Deals one player card per turn when a selected card appears; dealer takes prior dealt cards in that turn.) Tj
+ET
+BT
+/F1 10 Tf 60 568 Td
+(- Tracks remaining deck and disables cards already dealt.) Tj
+ET
+BT
+/F1 10 Tf 60 554 Td
+(- Evaluates best poker hands for player and dealer, including straight/flush/full house/quads logic.) Tj
+ET
+BT
+/F1 10 Tf 60 540 Td
+(- Completes showdown when player reaches 5 cards; dealer auto-tops to at least 8 cards.) Tj
+ET
+BT
+/F1 10 Tf 60 526 Td
+(- Supports keyboard shortcuts for selection and game actions \(Enter, S/H/C/D, 2-9/T/J/Q/K/A, 0, X, N, ?\).) Tj
+ET
+BT
+/F1 10 Tf 60 512 Td
+(- Includes theme toggle with localStorage persistence and a modal How to Play guide.) Tj
+ET
+BT
+/F2 12 Tf 48 492 Td
+(How It Works \(Repo Evidence\)) Tj
+ET
+BT
+/F1 10 Tf 60 478 Td
+(- UI layer: React components in src/app and src/components render controls, hands, selection grid, modal, and theme toggle.) Tj
+ET
+BT
+/F1 10 Tf 60 464 Td
+(- Game state/service layer: useRenjiePokerEngine hook in src/engine manages state, turn logic, and endgame transitions.) Tj
+ET
+BT
+/F1 10 Tf 60 450 Td
+(- Domain logic: src/lib/deck builds/shuffles cards; src/lib/poker-eval scores and compares hands.) Tj
+ET
+BT
+/F1 10 Tf 60 436 Td
+(- Data flow: UI events -> engine actions \(select/deal/reset\) -> state update -> derived hand evaluations -> re-render + message updates.) Tj
+ET
+BT
+/F1 10 Tf 60 422 Td
+(- Backend/API/database: Not found in repo.) Tj
+ET
+BT
+/F2 12 Tf 48 402 Td
+(How To Run \(Minimal\)) Tj
+ET
+BT
+/F1 10 Tf 60 388 Td
+(1. Install dependencies: npm install) Tj
+ET
+BT
+/F1 10 Tf 60 374 Td
+(2. Start dev server: npm run dev) Tj
+ET
+BT
+/F1 10 Tf 60 360 Td
+(3. Open the local Vite URL shown in terminal \(typically http://localhost:5173\).) Tj
+ET
+BT
+/F1 8 Tf 48 30 Td
+(Evidence sources: src/app/App.jsx, src/engine/useRenjiePokerEngine.js, src/lib/deck.js, src/lib/poker-eval.js, src/components/*.jsx, package.json.) Tj
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000321 00000 n 
+0000000396 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+3286
+%%EOF
