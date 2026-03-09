@@ -1,6 +1,24 @@
 import { useEffect, useCallback, useMemo, useState } from "react";
-import { makeDeck, shuffle, cardId, formatCard } from "../lib/deck";
+import { makeDeck, shuffle, cardId } from "../lib/deck";
 import { evaluateBestHand, compareHands } from "../lib/poker-eval";
+
+const NEW_GAME_MESSAGE = "new game — pick a subset and select deal.";
+const SELECT_AT_LEAST_ONE_MESSAGE = "select at least one card to deal.";
+const NO_CARDS_REMAINING_MESSAGE = "no cards remaining.";
+const NO_MATCH_MESSAGE = "no match found — dealer took all dealt cards. try again.";
+const FINISHING_GAME_MESSAGE = "you have 5 cards — finishing the game...";
+const DEALT_MESSAGE = "dealt. choose next subset and deal.";
+
+const RESULT_TYPE_NO_MATCH = "no-match";
+const RESULT_TYPE_MATCH = "match";
+
+function buildWinnerMessage(cmp, playerHandName, dealerHandName) {
+  if (cmp > 0) {
+    return `player wins! player: ${playerHandName} vs dealer: ${dealerHandName}`;
+  }
+
+  return `dealer wins${cmp === 0 ? " (ties go to dealer)" : ""}. player: ${playerHandName} vs dealer: ${dealerHandName}`;
+}
 
 function topUpDealerPure(dealerArr, remainingArr) {
   const dealer = [...dealerArr];
@@ -29,13 +47,13 @@ function dealOneTurnPure(remainingArr, selectionIds) {
 }
 
 export default function useRenjiePokerEngine() {
-    const freshDeck = useMemo(() => shuffle(makeDeck()), []); // one-time seed
+  const freshDeck = useMemo(() => shuffle(makeDeck()), []); // one-time seed
   const [game, setGame] = useState(() => ({
     player: [],
     dealer: [],
     remaining: freshDeck,
     selection: new Set(),  // Set<string> of card IDs
-    message: "New game — pick a subset and Deal.",
+    message: NEW_GAME_MESSAGE,
     gameOver: false,
     winner: null,          // 'player' | 'dealer' | null
   }));
@@ -108,7 +126,7 @@ export default function useRenjiePokerEngine() {
       dealer: [],
       remaining: shuffle(makeDeck()),
       selection: new Set(),
-      message: "New game — pick a subset and Deal.",
+      message: NEW_GAME_MESSAGE,
       gameOver: false,
       winner: null,
     });
@@ -118,14 +136,12 @@ export default function useRenjiePokerEngine() {
     setGame(prev => {
       if (prev.gameOver) return prev;
       if (prev.player.length >= 5) return prev;
-      if (prev.selection.size === 0) return { ...prev, message: "Select at least one card to deal." };
-      if (prev.remaining.length === 0) return { ...prev, message: "No cards remaining." };
+      if (prev.selection.size === 0) return { ...prev, message: SELECT_AT_LEAST_ONE_MESSAGE };
+      if (prev.remaining.length === 0) return { ...prev, message: NO_CARDS_REMAINING_MESSAGE };
 
       // Run one "turn" against the current snapshot
       const { playerCard, toDealer, remaining } =
         dealOneTurnPure(prev.remaining, prev.selection);
-
-      console.log("to player:", playerCard ? formatCard(playerCard) : "none", "| to dealer:", toDealer.map(formatCard).join(", ") || "none");
 
       if (!playerCard) {
         // We ran out without hitting selection: all burns go to dealer
@@ -133,14 +149,12 @@ export default function useRenjiePokerEngine() {
           ...prev,
           dealer: [...prev.dealer, ...toDealer],
           remaining,
-          message: "No match found — dealer took all dealt cards. Try again.",
+          message: NO_MATCH_MESSAGE,
         };
       }
 
       const nextPlayer = [...prev.player, playerCard];
       const nextDealer = [...prev.dealer, ...toDealer];
-
-      console.log(nextPlayer.length, "cards in player hand;", nextDealer.length, "in dealer hand;", remaining.length, "remaining.");
 
       return {
         ...prev,
@@ -149,8 +163,8 @@ export default function useRenjiePokerEngine() {
         remaining,
         selection: new Set(), // clear selection
         message: nextPlayer.length === 5
-          ? "You have 5 cards — finishing the game..."
-          : "Dealt. Choose next subset and Deal.",
+          ? FINISHING_GAME_MESSAGE
+          : DEALT_MESSAGE,
       };
     });
   }, []);
@@ -175,11 +189,7 @@ export default function useRenjiePokerEngine() {
       const dH = evaluateBestHand(dealerFinal);
       const cmp = compareHands(pH, dH);
       const winner = cmp > 0 ? "player" : cmp < 0 ? "dealer" : "dealer"; // ties to dealer
-
-      const message =
-        winner === "player"
-          ? `Player wins! Player: ${pH.name} vs Dealer: ${dH.name}`
-          : `Dealer wins${cmp === 0 ? " (ties go to dealer)" : ""}. Player: ${pH.name} vs Dealer: ${dH.name}`;
+      const message = buildWinnerMessage(cmp, pH.name, dH.name);
 
       return {
         ...prev,
@@ -193,11 +203,96 @@ export default function useRenjiePokerEngine() {
   }, [game.player.length, game.gameOver]);
 
 
-  
+  // Peek at what a deal would produce without changing state
+  const computeFullDeal = useCallback(() => {
+    if (game.gameOver || game.player.length >= 5 || game.selection.size === 0 || game.remaining.length === 0) {
+      return null;
+    }
+
+    const { playerCard, toDealer, remaining } = dealOneTurnPure(game.remaining, game.selection);
+
+    if (!playerCard) {
+      return {
+        type: RESULT_TYPE_NO_MATCH,
+        dealerCards: toDealer,
+        playerCard: null,
+        remaining,
+        topUpCards: [],
+      };
+    }
+
+    const nextPlayerCount = game.player.length + 1;
+    let topUpCards = [];
+    let finalRemaining = remaining;
+
+    if (nextPlayerCount === 5) {
+      const dealerAfterDeal = [...game.dealer, ...toDealer];
+      const needed = Math.max(0, 8 - dealerAfterDeal.length);
+      topUpCards = remaining.slice(0, needed);
+      finalRemaining = remaining.slice(needed);
+    }
+
+    return {
+      type: RESULT_TYPE_MATCH,
+      playerCard,
+      dealerCards: toDealer,
+      remaining: finalRemaining,
+      topUpCards,
+      isGameOver: nextPlayerCount === 5,
+    };
+  }, [game]);
+
+  // Apply a pre-computed deal result to state
+  const commitDeal = useCallback((result) => {
+    setGame(prev => {
+      if (prev.gameOver) return prev;
+
+      if (result.type === RESULT_TYPE_NO_MATCH) {
+        return {
+          ...prev,
+          dealer: [...prev.dealer, ...result.dealerCards],
+          remaining: result.remaining,
+          message: NO_MATCH_MESSAGE,
+        };
+      }
+
+      const nextPlayer = [...prev.player, result.playerCard];
+      const nextDealer = [...prev.dealer, ...result.dealerCards, ...result.topUpCards];
+
+      if (result.isGameOver) {
+        const pH = evaluateBestHand(nextPlayer);
+        const dH = evaluateBestHand(nextDealer);
+        const cmp = compareHands(pH, dH);
+        const winner = cmp > 0 ? "player" : "dealer";
+        const message = buildWinnerMessage(cmp, pH.name, dH.name);
+
+        return {
+          ...prev,
+          player: nextPlayer,
+          dealer: nextDealer,
+          remaining: result.remaining,
+          selection: new Set(),
+          gameOver: true,
+          winner,
+          message,
+        };
+      }
+
+      return {
+        ...prev,
+        player: nextPlayer,
+        dealer: nextDealer,
+        remaining: result.remaining,
+        selection: new Set(),
+        message: DEALT_MESSAGE,
+      };
+    });
+  }, []);
+
   return {
     // state
     player: game.player,
-    dealer: game.dealer,             
+    dealer: game.dealer,
     remainingIds,
     selection: game.selection,
     message: game.message,
@@ -211,6 +306,8 @@ export default function useRenjiePokerEngine() {
     // actions
     reset,
     deal,
+    computeFullDeal,
+    commitDeal,
     toggleSelect,
     selectSuit,
     selectRank,

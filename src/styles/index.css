@@ -47,8 +47,9 @@
   .btn-theme {
     @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm cursor-pointer;
     @apply border border-[var(--color-border)] bg-transparent text-[var(--color-text)];
-    @apply transition-colors duration-150;
+    @apply touch-manipulation select-none transition duration-150;
     @apply hover:bg-[var(--color-accent)] hover:text-[var(--color-background)] hover:border-[var(--color-accent)];
+    @apply active:bg-[var(--color-accent)] active:text-[var(--color-background)] active:border-[var(--color-accent)] active:scale-[0.98];
     @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)];
     font-family: 'DM Mono', monospace;
     font-weight: 400;
@@ -60,9 +61,33 @@
     @apply bg-[var(--color-surface)] border border-[var(--color-border)];
     font-family: 'DM Mono', monospace;
     font-weight: 500;
-    @media (max-width: 768px) {
-      @apply w-14 h-20 text-base;
-    }
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--color-text) 7%, transparent);
+  }
+
+  .deck-shell {
+    border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
+    border-radius: 20px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 96%, transparent), color-mix(in srgb, var(--color-background) 94%, transparent));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 16%, transparent),
+      0 8px 18px color-mix(in srgb, var(--color-text) 6%, transparent);
+  }
+
+  .card-back {
+    width: 48px;
+    height: 64px;
+    border: 1px solid color-mix(in srgb, var(--color-text) 12%, var(--color-border));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, white 8%, transparent), transparent 55%),
+      repeating-linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--color-accent) 56%, #213229) 0 6px,
+        color-mix(in srgb, var(--color-accent) 34%, #1a261f) 6px 12px
+      );
+    box-shadow:
+      inset 0 0 0 2px color-mix(in srgb, white 10%, transparent),
+      0 4px 10px color-mix(in srgb, var(--color-text) 8%, transparent);
   }
 }
 
