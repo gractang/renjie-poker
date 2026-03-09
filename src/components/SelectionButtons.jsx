@@ -42,9 +42,9 @@ export default function SelectionButtons({
         <button className={`btn-theme ${flashClass('clear')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onClearSelection} disabled={disabled}>clear</button>
       </div>
 
-      {/* Suits */}
-      <div className="space-y-3">
-        <div className="space-y-1.5">
+      {/* Suits + ranks */}
+      <div className="space-y-3 md:flex md:flex-wrap md:items-center md:gap-3 md:space-y-0">
+        <div className="space-y-1.5 md:space-y-0">
           <div className="px-0.5 text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)] md:hidden" style={{ fontFamily: "'DM Mono', monospace" }}>
             Suits
           </div>
@@ -62,7 +62,9 @@ export default function SelectionButtons({
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <span className="hidden h-5 w-px bg-[var(--color-border)] md:block" />
+
+        <div className="space-y-1.5 md:space-y-0">
           <div className="px-0.5 text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)] md:hidden" style={{ fontFamily: "'DM Mono', monospace" }}>
             Ranks
           </div>
