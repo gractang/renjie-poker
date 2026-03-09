@@ -20,9 +20,21 @@ export default function SelectionGrid({ remainingIds, selection, onToggle, disab
 }
 
 function SuitRow({ suitKey, suitSymbol, remainingIds, selection, onToggle, disabled }) {
+  const availableCount = RANKS.filter((rank) =>
+    remainingIds.has(cardId({ rank, suit: suitSymbol, suitKey, rVal: RANKS.indexOf(rank) + 2 }))
+  ).length;
+
   return (
-    <div className="overflow-x-auto">
-      <div className="flex flex-nowrap">
+    <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)]/72 p-2 md:rounded-none md:border-0 md:bg-transparent md:p-0">
+      <div className="mb-2 flex items-center justify-between px-1 md:hidden" style={{ fontFamily: "'DM Mono', monospace" }}>
+        <span className={`text-sm ${suitKey === "H" || suitKey === "D" ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
+          {suitSymbol}
+        </span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+          {availableCount} live
+        </span>
+      </div>
+      <div className="grid grid-cols-5 gap-1.5 md:flex md:flex-nowrap md:gap-1 md:overflow-x-auto">
         {RANKS.map((rank) => {
           const card = { rank, suit: suitSymbol, suitKey, rVal: RANKS.indexOf(rank) + 2 };
           const id = cardId(card);
@@ -30,7 +42,7 @@ function SuitRow({ suitKey, suitSymbol, remainingIds, selection, onToggle, disab
           const selected = selection.has(id);
 
           return (
-            <div key={id} className="shrink-0">
+            <div key={id} className="min-w-0 md:w-16 md:shrink-0 lg:w-20">
               <CardButton
                 card={card}
                 disabled={cardDisabled}
