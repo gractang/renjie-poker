@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchLeaderboard, LEADERBOARD_MIN_HANDS } from "../lib/accountData";
+import { fetchAppConfig, fetchLeaderboard } from "../lib/accountData";
 import SiteFooter from "./SiteFooter";
 
 function formatPercent(value) {
@@ -8,6 +8,7 @@ function formatPercent(value) {
 
 export default function LeaderboardPage({ onBack, standalone }) {
   const [rows, setRows] = useState([]);
+  const [leaderboardMinHands, setLeaderboardMinHands] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -15,7 +16,8 @@ export default function LeaderboardPage({ onBack, standalone }) {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchLeaderboard();
+      const [config, data] = await Promise.all([fetchAppConfig(), fetchLeaderboard()]);
+      setLeaderboardMinHands(config.leaderboardMinHands);
       setRows(data);
     } catch (err) {
       setError(err.message ?? "Could not load leaderboard.");
@@ -58,7 +60,9 @@ export default function LeaderboardPage({ onBack, standalone }) {
           <div>
             <h2 className="text-lg tracking-tight">Public top table</h2>
             <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-              Only players who opted in with at least {LEADERBOARD_MIN_HANDS} completed hands appear here.
+              {typeof leaderboardMinHands === "number"
+                ? `Only players who opted in with at least ${leaderboardMinHands} completed hands appear here.`
+                : "Only players who opted in and met the configured hand minimum appear here."}
             </p>
           </div>
 

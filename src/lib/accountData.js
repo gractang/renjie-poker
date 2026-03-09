@@ -1,9 +1,6 @@
 import { HAND_CATEGORY_ORDER } from "./poker-eval";
 import { hasSupabaseConfig, supabase } from "./supabaseClient";
 
-/** Minimum completed hands required to unlock leaderboard opt-in. */
-const LEADERBOARD_MIN_HANDS = 100;
-
 const EMPTY_STATS = {
   completedHands: 0,
   wins: 0,
@@ -11,6 +8,8 @@ const EMPTY_STATS = {
   winRatePct: 0,
   handBreakdown: [],
 };
+
+const APP_CONFIG_ROW_ID = 1;
 
 function requireSupabase() {
   if (!hasSupabaseConfig || !supabase) {
@@ -128,6 +127,27 @@ export async function updateProfileSettings(userId, updates) {
   }
 
   return data;
+}
+
+export async function fetchAppConfig() {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("app_config")
+    .select("leaderboard_min_hands")
+    .eq("id", APP_CONFIG_ROW_ID)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  if (typeof data?.leaderboard_min_hands !== "number") {
+    throw new Error("Leaderboard config is missing.");
+  }
+
+  return {
+    leaderboardMinHands: data.leaderboard_min_hands,
+  };
 }
 
 export async function fetchLeaderboard(limit = 50) {
@@ -271,4 +291,4 @@ export async function saveCompletedGameRecord({ userId, summary }) {
   return sessionRow;
 }
 
-export { EMPTY_STATS, LEADERBOARD_MIN_HANDS };
+export { EMPTY_STATS };

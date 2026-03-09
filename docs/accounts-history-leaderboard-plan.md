@@ -8,7 +8,7 @@ Use Supabase for the first backend pass. The app is currently a frontend-only Vi
 
 - A "hand" means one completed showdown.
 - Only completed, server-verified hands count toward stats and leaderboard eligibility.
-- Reset or abandoned games do not count toward the 100-hand requirement.
+- Reset or abandoned games do not count toward the leaderboard-eligibility requirement.
 
 ## Phase 1: Shared Game Contract
 
@@ -70,19 +70,19 @@ Acceptance criteria:
 
 Scope:
 
-- Gate leaderboard opt-in until a user has 100 completed hands.
+- Gate leaderboard opt-in until a user has reached the configured completed-hand threshold.
 - Require a public leaderboard name before opting in.
 - Show rank, win rate, and hands played.
 
 Recommendation:
 
 - Display raw win rate.
-- Rank by an adjusted score such as Wilson lower bound to reduce small-sample volatility, while still requiring 100 completed hands.
+- Rank by an adjusted score such as Wilson lower bound to reduce small-sample volatility, while still requiring the configured completed-hand threshold.
 
 Acceptance criteria:
 
-- Users under 100 completed hands see progress but cannot opt in.
-- Users at or above 100 completed hands can opt in and opt out.
+- Users under the configured completed-hand threshold see progress but cannot opt in.
+- Users at or above the configured completed-hand threshold can opt in and opt out.
 - Only opted-in users appear publicly.
 
 ## Phase 6: Hardening
