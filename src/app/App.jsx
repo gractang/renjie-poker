@@ -122,7 +122,7 @@ function FlyingCard({ card, from, to, delay, duration }) {
   );
 }
 
-function HandHeader({ label, countLabel, handName }) {
+function HandHeader({ label, countLabel, handName, resultTag = null }) {
   return (
     <div className="mb-2 flex items-start justify-between gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -132,6 +132,19 @@ function HandHeader({ label, countLabel, handName }) {
         >
           {label}
         </div>
+        {resultTag && (
+          <div
+            className={[
+              "rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]",
+              resultTag === "winner"
+                ? "border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_16%,transparent)] text-[var(--color-accent)]"
+                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]",
+            ].join(" ")}
+            style={{ fontFamily: "'DM Mono', monospace" }}
+          >
+            {resultTag}
+          </div>
+        )}
         {handName && (
           <div
             className="text-[11px] text-[var(--color-text-muted)]"
@@ -148,6 +161,43 @@ function HandHeader({ label, countLabel, handName }) {
         {countLabel}
       </div>
     </div>
+  );
+}
+
+function WinnerBanner({ winner, playerEval, dealerEval }) {
+  if (!winner || !playerEval || !dealerEval) return null;
+
+  const isTie = playerEval.score === dealerEval.score;
+  const winnerLabel = winner === "player" ? "Player wins" : "Dealer wins";
+
+  return (
+    <section
+      aria-live="polite"
+      className="mb-4 rounded-[20px] border border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_10%,var(--color-surface))] px-4 py-3"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          className="text-sm uppercase tracking-[0.2em] text-[var(--color-accent)]"
+          style={{ fontFamily: "'DM Mono', monospace" }}
+        >
+          {winnerLabel}
+        </div>
+        {isTie && (
+          <div
+            className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--color-text-muted)]"
+            style={{ fontFamily: "'DM Mono', monospace" }}
+          >
+            tie break: dealer
+          </div>
+        )}
+      </div>
+      <div
+        className="mt-2 text-xs text-[var(--color-text)]"
+        style={{ fontFamily: "'DM Mono', monospace" }}
+      >
+        player: {playerEval.name} &middot; dealer: {dealerEval.name}
+      </div>
+    </section>
   );
 }
 
@@ -187,6 +237,7 @@ export default function App() {
     message,
     selection,
     remainingIds,
+    winner,
     playerEval,
     dealerEval,
     gameOver,
@@ -510,22 +561,26 @@ export default function App() {
       }
 
       if (["s", "h", "c", "d"].includes(key)) {
+        if (isDealing || gameOver) return;
         const suit = key.toUpperCase();
         flashButton(`suit-${suit}`, () => eng.selectSuit(suit));
         return;
       }
 
       if (["2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k", "a"].includes(key)) {
+        if (isDealing || gameOver) return;
         const rank = key.toUpperCase();
         flashButton(`rank-${rank}`, () => eng.selectRank(rank));
         return;
       }
 
       if (key === "0") {
+        if (isDealing || gameOver) return;
         flashButton("selectAll", () => eng.selectAll());
         return;
       }
       if (key === "x") {
+        if (isDealing || gameOver) return;
         flashButton("clear", () => eng.clearSelection());
         return;
       }
@@ -540,7 +595,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [selection.size, player.length, showRules, showAccount, route, eng, isDealing, handleAnimatedDeal, handleReset]);
+  }, [selection.size, player.length, showRules, showAccount, route, eng, isDealing, gameOver, handleAnimatedDeal, handleReset]);
 
   if (route === "leaderboard") {
     return <LeaderboardPage onBack={handleCloseRoute} standalone />;
@@ -574,6 +629,7 @@ export default function App() {
   const visibleDeckCount = Math.max(0, deckCount - flyingCards.length);
   const selectorSummary = `${selection.size} selected`;
   const selectorDeckLabel = `${visibleDeckCount} live`;
+  const selectionDisabled = isDealing || gameOver;
 
   return (
     <div className="min-h-screen flex flex-col max-w-5xl lg:max-w-6xl mx-auto">
@@ -586,15 +642,15 @@ export default function App() {
         <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
           <ThemeToggle />
           <button
-            className={`btn-theme ${buttonFlash.help ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
+            className={`btn-theme topbar-icon-btn ${buttonFlash.help ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
             onClick={() => setShowRules(true)}
             title="Help"
             type="button"
           >
-            ?
+            <span className="text-[15px] leading-none">?</span>
           </button>
           <a
-            className="btn-theme"
+            className="btn-theme topbar-icon-btn"
             href="#leaderboard"
             rel="noopener noreferrer"
             target="_blank"
@@ -603,15 +659,15 @@ export default function App() {
             <TrophyIcon className="h-4 w-4" />
           </a>
           <button
-            className="btn-theme"
+            className={auth.user ? "btn-theme topbar-icon-btn" : "btn-theme"}
             onClick={() => setShowAccount(true)}
-            title="Profile"
+            title={auth.user ? "Profile" : "Log in"}
             type="button"
           >
-            <UserIcon className="h-4 w-4" />
+            {auth.user ? <UserIcon className="h-4 w-4" /> : "log in"}
           </button>
           <button
-            className={`btn-theme ${gameOver ? "animate-pulse border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
+            className={`btn-theme ${gameOver ? "new-game-cta border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
             onClick={handleReset}
             type="button"
           >
@@ -624,6 +680,13 @@ export default function App() {
         <div className="mb-3 text-xs text-[var(--color-text-muted)] md:mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
           {message}
         </div>
+        {gameOver && (
+          <WinnerBanner
+            winner={winner}
+            playerEval={playerEval}
+            dealerEval={dealerEval}
+          />
+        )}
 
         <section className="mb-4 flex flex-col items-start gap-3 md:mb-6 md:flex-row md:gap-6">
           <div className="flex-1 min-w-0">
@@ -631,6 +694,7 @@ export default function App() {
               countLabel={`${player.length}/5 cards`}
               handName={playerEval?.name}
               label="Player"
+              resultTag={gameOver ? (winner === "player" ? "winner" : "loser") : null}
             />
             <div ref={playerHandRef}>
               <HandRow cards={player} highlightBest={playerEval?.bestFive || null} />
@@ -674,6 +738,7 @@ export default function App() {
               countLabel={`${dealer.length} cards`}
               handName={dealerEval?.name}
               label="Dealer"
+              resultTag={gameOver ? (winner === "dealer" ? "winner" : "loser") : null}
             />
             <div ref={dealerHandRef}>
               <HandRow cards={dealer} highlightBest={dealerEval?.bestFive || null} wrap />
@@ -744,10 +809,18 @@ export default function App() {
               <div className="hidden text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3 md:block" style={{ fontFamily: "'DM Mono', monospace" }}>
                 Select from deck
               </div>
+              {gameOver && (
+                <div
+                  className="mb-3 rounded-xl border border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_8%,var(--color-surface))] px-3 py-2 text-[11px] text-[var(--color-text)]"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                >
+                  Hand complete. Start a new game to select from the deck again.
+                </div>
+              )}
               <SelectionButtons
                 buttonFlash={buttonFlash}
-                canDeal={player.length < 5 && !isDealing}
-                disabled={isDealing}
+                canDeal={player.length < 5 && !selectionDisabled}
+                disabled={selectionDisabled}
                 hasSelection={selection.size > 0}
                 onClearSelection={eng.clearSelection}
                 onDeal={handleAnimatedDeal}
@@ -756,9 +829,9 @@ export default function App() {
                 onSelectSuit={eng.selectSuit}
               />
               <div className="h-3" />
-              <div className={`max-h-[50vh] overflow-y-auto pr-1 transition-opacity md:max-h-[45vh] ${isDealing ? "opacity-60" : ""}`}>
+              <div className={`max-h-[50vh] overflow-y-auto pr-1 transition-opacity md:max-h-[45vh] ${selectionDisabled ? "opacity-60" : ""}`}>
                 <SelectionGrid
-                  disabled={isDealing}
+                  disabled={selectionDisabled}
                   onToggle={eng.toggleSelect}
                   remainingIds={remainingIds}
                   selection={selection}

@@ -4,6 +4,30 @@ function ranksToLexScore(ranks) {
   return score;
 }
 
+const RANK_LABELS = {
+  2: "2",
+  3: "3",
+  4: "4",
+  5: "5",
+  6: "6",
+  7: "7",
+  8: "8",
+  9: "9",
+  10: "10",
+  11: "J",
+  12: "Q",
+  13: "K",
+  14: "A",
+};
+
+function rankLabel(rVal) {
+  return RANK_LABELS[rVal] ?? String(rVal);
+}
+
+function rankPluralLabel(rVal) {
+  return `${rankLabel(rVal)}s`;
+}
+
 export const HAND_CATEGORY_ORDER = [
   "high-card",
   "one-pair",
@@ -21,7 +45,7 @@ export function evaluateBestHand(cards) {
     return {
       category: "no-hand",
       score: -1,
-      name: "No Hand",
+      name: "No hand",
       kickerRanks: [],
       bestFive: [],
     };
@@ -72,7 +96,7 @@ export function evaluateBestHand(cards) {
     return {
       category: "straight-flush",
       score: 8e9 + scoreBase * 1e6,
-      name: "Straight Flush",
+      name: `${rankLabel(scoreBase)} high straight flush`,
       kickerRanks: bestSF.map(c => c.rVal),
       bestFive: bestSF,
     };
@@ -88,7 +112,7 @@ export function evaluateBestHand(cards) {
       return {
         category: "four-of-a-kind",
         score: 7e9 + q * 1e6 + k.rVal * 1e3,
-        name: "Four of a Kind",
+        name: `Four ${rankPluralLabel(q)}`,
         kickerRanks: [q, q, q, q, k.rVal],
         bestFive: [...quad, k],
       };
@@ -97,7 +121,7 @@ export function evaluateBestHand(cards) {
       return {
         category: "four-of-a-kind",
         score: 7e9 + q * 1e6,
-        name: "Four of a Kind",
+        name: `Four ${rankPluralLabel(q)}`,
         kickerRanks: [q, q, q, q],
         bestFive: quad,
       };
@@ -118,7 +142,7 @@ export function evaluateBestHand(cards) {
       return {
         category: "full-house",
         score: 6e9 + t * 1e6 + p * 1e3,
-        name: "Full House",
+        name: `${rankPluralLabel(t)} full of ${rankPluralLabel(p)}`,
         kickerRanks: [t, t, t, p, p],
         bestFive: [...rankCounts.get(t).slice(0, 3), ...rankCounts.get(p).slice(0, 2)],
       };
@@ -137,7 +161,7 @@ export function evaluateBestHand(cards) {
     return {
       category: "flush",
       score: 5e9 + ranksToLexScore(bestFlush.map(c => c.rVal)),
-      name: "Flush",
+      name: `${rankLabel(bestFlush[0].rVal)} high flush`,
       kickerRanks: bestFlush.map(c => c.rVal),
       bestFive: bestFlush,
     };
@@ -152,7 +176,7 @@ export function evaluateBestHand(cards) {
     return {
       category: "straight",
       score: 4e9 + scoreBase * 1e6,
-      name: "Straight",
+      name: `${rankLabel(scoreBase)} high straight`,
       kickerRanks: st.map(c => c.rVal),
       bestFive: st,
     };
@@ -166,7 +190,7 @@ export function evaluateBestHand(cards) {
     return {
       category: "three-of-a-kind",
       score: 3e9 + t * 1e6 + ranksToLexScore(ks.map(c => c.rVal)),
-      name: "Three of a Kind",
+      name: `Three ${rankPluralLabel(t)}`,
       kickerRanks: [t, t, t, ...ks.map(c => c.rVal)],
       bestFive: [...tCards, ...ks],
     };
@@ -180,7 +204,7 @@ export function evaluateBestHand(cards) {
       return {
         category: "two-pair",
         score: 2e9 + p1 * 1e6 + p2 * 1e4 + k.rVal * 1e2,
-        name: "Two Pair",
+        name: `Two pair, ${rankPluralLabel(p1)} and ${rankPluralLabel(p2)}`,
         kickerRanks: [p1, p1, p2, p2, k.rVal],
         bestFive: [...rankCounts.get(p1).slice(0, 2), ...rankCounts.get(p2).slice(0, 2), k],
       };
@@ -189,7 +213,7 @@ export function evaluateBestHand(cards) {
       return {
         category: "two-pair",
         score: 2e9 + p1 * 1e6 + p2 * 1e4,
-        name: "Two Pair",
+        name: `Two pair, ${rankPluralLabel(p1)} and ${rankPluralLabel(p2)}`,
         kickerRanks: [p1, p1, p2, p2],
         bestFive: [...rankCounts.get(p1).slice(0, 2), ...rankCounts.get(p2).slice(0, 2)],
       };
@@ -204,7 +228,7 @@ export function evaluateBestHand(cards) {
     return {
       category: "one-pair",
       score: 1e9 + p * 1e6 + ranksToLexScore(ks.map(c => c.rVal)),
-      name: "One Pair",
+      name: `Pair of ${rankPluralLabel(p)}`,
       kickerRanks: [p, p, ...ks.map(c => c.rVal)],
       bestFive: [...pCards, ...ks],
     };
@@ -215,7 +239,7 @@ export function evaluateBestHand(cards) {
   return {
     category: "high-card",
     score: ranksToLexScore(top5.map(c => c.rVal)),
-    name: "High Card",
+    name: `${rankLabel(top5[0].rVal)} high`,
     kickerRanks: top5.map(c => c.rVal),
     bestFive: top5,
   };

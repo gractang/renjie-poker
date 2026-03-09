@@ -311,9 +311,6 @@
   .h-7 {
     height: calc(var(--spacing) * 7);
   }
-  .h-8 {
-    height: calc(var(--spacing) * 8);
-  }
   .h-full {
     height: 100%;
   }
@@ -337,9 +334,6 @@
   }
   .w-7 {
     width: calc(var(--spacing) * 7);
-  }
-  .w-8 {
-    width: calc(var(--spacing) * 8);
   }
   .w-\[min\(640px\,92vw\)\] {
     width: min(640px, 92vw);
@@ -566,6 +560,24 @@
   .border-\[var\(--color-text\)\] {
     border-color: var(--color-text);
   }
+  .bg-\[color-mix\(in_srgb\,var\(--color-accent\)_8\%\,var\(--color-surface\)\)\] {
+    background-color: var(--color-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in srgb,var(--color-accent) 8%,var(--color-surface));
+    }
+  }
+  .bg-\[color-mix\(in_srgb\,var\(--color-accent\)_10\%\,var\(--color-surface\)\)\] {
+    background-color: var(--color-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in srgb,var(--color-accent) 10%,var(--color-surface));
+    }
+  }
+  .bg-\[color-mix\(in_srgb\,var\(--color-accent\)_16\%\,transparent\)\] {
+    background-color: var(--color-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in srgb,var(--color-accent) 16%,transparent);
+    }
+  }
   .bg-\[color-mix\(in_srgb\,var\(--color-selected\)_18\%\,var\(--color-surface\)\)\] {
     background-color: var(--color-selected);
     @supports (color: color-mix(in lab, red, red)) {
@@ -733,6 +745,13 @@
   .text-\[11px\] {
     font-size: 11px;
   }
+  .text-\[15px\] {
+    font-size: 15px;
+  }
+  .leading-none {
+    --tw-leading: 1;
+    line-height: 1;
+  }
   .leading-relaxed {
     --tw-leading: var(--leading-relaxed);
     line-height: var(--leading-relaxed);
@@ -744,6 +763,14 @@
   .font-medium {
     --tw-font-weight: var(--font-weight-medium);
     font-weight: var(--font-weight-medium);
+  }
+  .tracking-\[0\.2em\] {
+    --tw-tracking: 0.2em;
+    letter-spacing: 0.2em;
+  }
+  .tracking-\[0\.16em\] {
+    --tw-tracking: 0.16em;
+    letter-spacing: 0.16em;
   }
   .tracking-\[0\.18em\] {
     --tw-tracking: 0.18em;
@@ -1336,11 +1363,51 @@
       box-shadow: inset 0 0 0 2px color-mix(in srgb, white 10%, transparent), 0 4px 10px color-mix(in srgb, var(--color-text) 8%, transparent);
     }
   }
+  .topbar-icon-btn {
+    height: calc(var(--spacing) * 8);
+    width: calc(var(--spacing) * 8);
+    padding: calc(var(--spacing) * 0);
+  }
+  .new-game-cta {
+    position: relative;
+    isolation: isolate;
+  }
+  .new-game-cta::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient( from var(--new-game-border-angle), white 0deg, var(--color-accent) 72deg, var(--color-accent) 144deg, white 216deg, var(--color-accent) 288deg, white 360deg );
+    @supports (color: color-mix(in lab, red, red)) {
+      background: conic-gradient( from var(--new-game-border-angle), color-mix(in srgb, white 90%, var(--color-accent)) 0deg, color-mix(in srgb, var(--color-accent) 88%, #1b3a2d) 72deg, color-mix(in srgb, var(--color-accent) 62%, #0f231b) 144deg, color-mix(in srgb, white 84%, var(--color-accent)) 216deg, color-mix(in srgb, var(--color-accent) 92%, #173127) 288deg, color-mix(in srgb, white 90%, var(--color-accent)) 360deg );
+    }
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: new-game-border-shift 1.8s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes new-game-border-shift {
+    to {
+      --new-game-border-angle: 1turn;
+    }
+  }
 }
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+@property --new-game-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@media (prefers-reduced-motion: reduce) {
+  .new-game-cta::before {
+    animation: none;
+  }
 }
 @property --tw-rotate-x {
   syntax: "*";
@@ -1628,6 +1695,7 @@ body {
       --tw-backdrop-sepia: initial;
       --tw-duration: initial;
       --tw-outline-style: solid;
+      --new-game-border-angle: 0deg;
     }
   }
 }

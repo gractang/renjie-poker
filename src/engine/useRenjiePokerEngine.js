@@ -70,6 +70,7 @@ export default function useRenjiePokerEngine() {
   const toggleSelect = useCallback((card) => {
     const id = cardId(card);
     setGame(prev => {
+      if (prev.gameOver) return prev;
       if (!prev.remaining.some(c => cardId(c) === id)) return prev;
 
       const nextSel = new Set(prev.selection);
@@ -81,6 +82,7 @@ export default function useRenjiePokerEngine() {
 
   const selectSuit = useCallback((suitKey) => {
     setGame(prev => {
+      if (prev.gameOver) return prev;
       const nextSel = new Set(prev.selection);
       for (const c of prev.remaining) {
         if (c.suitKey === suitKey) nextSel.add(cardId(c));
@@ -91,6 +93,7 @@ export default function useRenjiePokerEngine() {
 
   const selectRank = useCallback((rank) => {
     setGame(prev => {
+      if (prev.gameOver) return prev;
       const nextSel = new Set(prev.selection);
       for (const c of prev.remaining) {
         if (c.rank === rank) nextSel.add(cardId(c));
@@ -101,6 +104,7 @@ export default function useRenjiePokerEngine() {
 
   const selectAll = useCallback(() => {
     setGame(prev => {
+      if (prev.gameOver) return prev;
       const nextSel = new Set(prev.selection);
       for (const c of prev.remaining) nextSel.add(cardId(c));
       return { ...prev, selection: nextSel };
@@ -108,7 +112,7 @@ export default function useRenjiePokerEngine() {
   }, []);
 
   const clearSelection = useCallback(() => {
-    setGame(prev => ({ ...prev, selection: new Set() }));
+    setGame(prev => (prev.gameOver ? prev : { ...prev, selection: new Set() }));
   }, []);
 
   const reset = useCallback(() => {
