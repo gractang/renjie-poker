@@ -1,4 +1,4 @@
-const CACHE_NAME = "renjie-poker-v1";
+const CACHE_NAME = "renjie-poker-v2";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -38,38 +38,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("/index.html")))
-    );
-    return;
-  }
-
-  const isStaticAsset =
-    url.pathname.startsWith("/assets/") ||
-    ["script", "style", "image", "font"].includes(request.destination);
-
-  if (!isStaticAsset) {
-    return;
-  }
-
+  // All requests: network-first with cache fallback (works offline, always fresh online)
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const networkFetch = fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || networkFetch;
-    })
+    fetch(request)
+      .then((response) => {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+        return response;
+      })
+      .catch(() => caches.match(request).then((cached) => cached || caches.match("/index.html")))
   );
 });
