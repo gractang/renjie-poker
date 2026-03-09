@@ -56,6 +56,8 @@
       body {
         margin: 0;
         min-height: 100vh;
+        display: flex;
+        flex-direction: column;
         color: var(--color-text);
         background: radial-gradient(circle at top, color-mix(in srgb, var(--color-accent) 9%, transparent), transparent 55%),
           var(--color-background);
@@ -192,6 +194,15 @@
         color: var(--color-background);
       }
 
+      .site-footer {
+        margin-top: auto;
+        padding: 12px 20px 20px;
+        text-align: center;
+        color: var(--color-text-muted);
+        font-family: "DM Mono", monospace;
+        font-size: 12px;
+      }
+
       @media (max-width: 640px) {
         .page-header {
           margin-top: 16px;
@@ -246,6 +257,10 @@
         <a class="btn" href="/">back to game</a>
       </div>
     </main>
+
+    <footer class="site-footer">
+      game by renjie you · site by grace tang
+    </footer>
 
     <script>
       (() => {

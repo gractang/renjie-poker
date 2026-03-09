@@ -11,11 +11,11 @@ import {
   TURN_STATUS_NO_MATCH,
 } from "../lib/renjie-game";
 
-const NEW_GAME_MESSAGE = "New game — pick a subset and Deal.";
+const NEW_GAME_MESSAGE = "new game — pick a subset and deal.";
 const SELECT_AT_LEAST_ONE_MESSAGE = "Select at least one card to deal.";
-const NO_CARDS_REMAINING_MESSAGE = "No cards remaining.";
-const NO_MATCH_MESSAGE = "No match found — dealer took all dealt cards. Try again.";
-const DEALT_MESSAGE = "Dealt. Choose next subset and Deal.";
+const NO_CARDS_REMAINING_MESSAGE = "no cards remaining.";
+const NO_MATCH_MESSAGE = "no match found — dealer took all dealt cards. try again.";
+const DEALT_MESSAGE = "dealt. choose next subset and deal.";
 const FINISHING_GAME_MESSAGE = "You have 5 cards — finishing the game...";
 
 function createFreshGame() {
