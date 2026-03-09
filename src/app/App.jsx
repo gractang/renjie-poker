@@ -41,10 +41,18 @@ function TrophyIcon({ className = "" }) {
     <svg
       aria-hidden="true"
       className={className}
-      fill="currentColor"
-      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
     >
-      <path d="M5 3.5a.75.75 0 0 1 .75-.75h8.5a.75.75 0 0 1 .75.75v1h1a1.5 1.5 0 0 1 1.5 1.5v.25a3.75 3.75 0 0 1-2.9 3.65A4.76 4.76 0 0 1 11 13.16v1.34h2a.75.75 0 0 1 0 1.5H7a.75.75 0 0 1 0-1.5h2v-1.34A4.76 4.76 0 0 1 4.9 9.9 3.75 3.75 0 0 1 2 6.25V6a1.5 1.5 0 0 1 1.5-1.5h1v-1Zm0 2.5h-1a.25.25 0 0 0-.25.25v.25c0 .82.44 1.54 1.1 1.93A4.8 4.8 0 0 1 5 7.55V6Zm10 0v1.55c0 .3-.03.6-.09.88A2.25 2.25 0 0 0 16.25 6.5v-.25a.25.25 0 0 0-.25-.25h-1Z" />
+      <path d="M8 21h8" />
+      <path d="M12 17v4" />
+      <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" />
+      <path d="M7 6H4a3 3 0 0 0 3 5" />
+      <path d="M17 6h3a3 3 0 0 1-3 5" />
     </svg>
   );
 }
@@ -54,14 +62,15 @@ function UserIcon({ className = "" }) {
     <svg
       aria-hidden="true"
       className={className}
-      fill="currentColor"
-      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
     >
-      <path
-        clipRule="evenodd"
-        d="M10 2.75a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5ZM5.25 15A4.75 4.75 0 0 1 10 11.75 4.75 4.75 0 0 1 14.75 15v.25a.75.75 0 0 1-.75.75h-8a.75.75 0 0 1-.75-.75V15Z"
-        fillRule="evenodd"
-      />
+      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+      <path d="M4 20a8 8 0 0 1 16 0" />
     </svg>
   );
 }
