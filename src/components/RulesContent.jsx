@@ -3,9 +3,9 @@ export default function RulesContent() {
     <div className="space-y-4 text-sm leading-relaxed text-[var(--color-text)]">
       <p><strong>Goal:</strong> Build the best 5-card poker hand.</p>
       <ol className="list-decimal pl-5 space-y-2">
-        <li>You start with an empty hand. The dealer has a full shuffled deck.</li>
-        <li>On each turn, choose a <em>subset of ranks/suits</em> from the remaining deck, then deal.</li>
-        <li>The dealer deals cards until a card in your subset appears:
+        <li>You start with an empty hand and a full shuffled deck.</li>
+        <li>On each turn, choose a <em>subset of ranks/suits</em> from the remaining deck, then select deal.</li>
+        <li>Cards are dealt from the deck until a card in your subset appears:
           <ul className="list-disc pl-5 mt-1 text-[var(--color-text-muted)]">
             <li>You take that matching card.</li>
             <li>The dealer takes every other card dealt.</li>
@@ -28,6 +28,24 @@ export default function RulesContent() {
           <div className="flex justify-between"><span className="text-[var(--color-text-muted)]">new game</span><span>n</span></div>
           <div className="flex justify-between"><span className="text-[var(--color-text-muted)]">help</span><span>?</span></div>
         </div>
+      </div>
+
+      <div className="pt-4 border-t border-[var(--color-border)]">
+        <h3 className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3" style={{ fontFamily: "'DM Mono', monospace" }}>
+          About
+        </h3>
+        <p className="text-[var(--color-text-muted)]">
+          Read{" "}
+          <a
+            href="/about.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-text)] underline underline-offset-2 hover:text-[var(--color-accent)]"
+          >
+            the full story
+          </a>{" "}
+          behind the game.
+        </p>
       </div>
     </div>
   );

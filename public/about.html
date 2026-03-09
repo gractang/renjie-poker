@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About · Renjie Poker</title>
+    <meta
+      name="description"
+      content="Background, design notes, and extended writeup for Renjie Poker."
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (() => {
+        const html = document.documentElement;
+        const saved = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
+        const dark = saved ? saved === "dark" : prefersDark;
+        html.classList.toggle("dark", dark);
+      })();
+    </script>
+    <style>
+      :root {
+        --color-text: #2c2418;
+        --color-text-muted: #8a7e6e;
+        --color-background: #f7f3ec;
+        --color-surface: #fffdf9;
+        --color-border: #e4ddd2;
+        --color-accent: #40916c;
+      }
+
+      .dark {
+        --color-text: #e8e2d6;
+        --color-text-muted: #a59a8a;
+        --color-background: #1a1611;
+        --color-surface: #242018;
+        --color-border: #3a3428;
+        --color-accent: #52b788;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--color-text);
+        background: radial-gradient(circle at top, color-mix(in srgb, var(--color-accent) 9%, transparent), transparent 55%),
+          var(--color-background);
+        font-family: "DM Sans", system-ui, sans-serif;
+        line-height: 1.6;
+      }
+
+      .page-header {
+        width: min(860px, 92vw);
+        margin: 24px auto 0;
+        padding: 0 2px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .title {
+        margin: 0;
+        font-family: "DM Mono", monospace;
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+
+      .title-link {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .title-link:hover {
+        opacity: 0.8;
+      }
+
+      .inline-link {
+        color: var(--color-text);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      .inline-link:hover {
+        color: var(--color-accent);
+      }
+
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 1px solid var(--color-border);
+        background: transparent;
+        color: var(--color-text);
+        cursor: pointer;
+      }
+
+      .theme-toggle:hover {
+        border-color: var(--color-accent);
+        background: var(--color-accent);
+        color: var(--color-background);
+      }
+
+      main {
+        width: min(860px, 92vw);
+        margin: 16px auto 48px;
+        padding: 28px;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+      }
+
+      .page-heading {
+        margin: 0 0 8px;
+        font-family: "DM Mono", monospace;
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+
+      .kicker {
+        margin: 0 0 24px;
+        color: var(--color-text-muted);
+        font-family: "DM Mono", monospace;
+        font-size: 12px;
+      }
+
+      section + section {
+        margin-top: 26px;
+      }
+
+      h2 {
+        margin: 0 0 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 12px;
+        font-family: "DM Mono", monospace;
+        color: var(--color-text-muted);
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .placeholder {
+        margin-top: 10px;
+        padding: 14px;
+        border: 1px dashed var(--color-border);
+        color: var(--color-text-muted);
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border: 1px solid var(--color-border);
+        background: transparent;
+        color: var(--color-text);
+        text-decoration: none;
+        font-family: "DM Mono", monospace;
+        font-size: 14px;
+      }
+
+      .btn:hover {
+        border-color: var(--color-accent);
+        background: var(--color-accent);
+        color: var(--color-background);
+      }
+
+      @media (max-width: 640px) {
+        .page-header {
+          margin-top: 16px;
+        }
+
+        main {
+          margin: 12px auto 24px;
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-header">
+      <a class="title title-link" href="/" title="Start a new game">renjie poker</a>
+      <button
+        type="button"
+        id="theme-toggle"
+        class="theme-toggle"
+        aria-label="Toggle color theme"
+      ></button>
+    </header>
+
+    <main>
+      <h1 class="page-heading">About Renjie Poker</h1>
+      <p class="kicker">Always a work in progress.</p>
+
+      <section>
+        <h2>The Game</h2>
+        <p>
+          Renjie Poker was created by <strong>Renjie You</strong>, a trader at
+          <a
+            href="https://www.janestreet.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-link"
+          >
+            Jane Street Capital
+          </a>.
+          I first came across this game from some of my friends who had interned at Jane Street, and it quickly became a favorite pastime of mine. Despite the game having a "player" and a "dealer," it's actually functionally a single-player game, which makes it a great candidate to stave off boredom. 
+          <br><br>
+          One of the interesting things to me about Renjie Poker is that I don't think (to my knowledge) there's a solved optimal strategy for the game. Renjie was heavily involved in the internship program, and as such I had the distinct pleasure of playing with him in person while interning at Jane Street! When chatting with him about strategies, he estimated that with optimal play, the player can expect to win around 60% of the time. I encourage you to see if you can get close to this rate!
+        </p>
+      </section>
+
+      <section>
+        <h2>The Website</h2>
+        <p>This digital version was built by <strong>Grace Tang</strong>, with a lot of help from Claude 4.6 Opus and Codex 5.4 and with Renjie's blessing.</p>
+      </section>
+
+      <div class="actions">
+        <a class="btn" href="/">back to game</a>
+      </div>
+    </main>
+
+    <script>
+      (() => {
+        const html = document.documentElement;
+        const button = document.getElementById("theme-toggle");
+        if (!button) return;
+
+        const updateLabel = () => {
+          const dark = html.classList.contains("dark");
+          const label = dark ? "Switch to light theme" : "Switch to dark theme";
+          button.setAttribute("title", label);
+          button.setAttribute("aria-label", label);
+          button.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              ${
+                dark
+                  ? '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>'
+                  : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'
+              }
+            </svg>
+          `;
+        };
+
+        button.addEventListener("click", () => {
+          const next = !html.classList.contains("dark");
+          html.classList.toggle("dark", next);
+          localStorage.setItem("theme", next ? "dark" : "light");
+          updateLabel();
+        });
+
+        updateLabel();
+      })();
+    </script>
+  </body>
+</html>
