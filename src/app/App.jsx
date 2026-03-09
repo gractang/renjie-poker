@@ -94,6 +94,14 @@ export default function App() {
   } = eng;
 
   const [showRules, setShowRules] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
+  const [isSelectorOpen, setIsSelectorOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
   const [buttonFlash, setButtonFlash] = useState({});
   const [flyingCards, setFlyingCards] = useState([]);
   const [isDealing, setIsDealing] = useState(false);
@@ -245,6 +253,31 @@ export default function App() {
 
   useEffect(() => clearPendingCommit, [clearPendingCommit]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const syncViewport = (event) => {
+      const desktop = event?.matches ?? mediaQuery.matches;
+      setIsDesktop(desktop);
+      setIsSelectorOpen((current) => (desktop ? true : current));
+    };
+
+    syncViewport();
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", syncViewport);
+      return () => mediaQuery.removeEventListener("change", syncViewport);
+    }
+
+    mediaQuery.addListener(syncViewport);
+    return () => mediaQuery.removeListener(syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop && player.length > 0 && !isDealing) {
+      setIsSelectorOpen(false);
+    }
+  }, [isDesktop, isDealing, player.length]);
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event) => {
@@ -295,17 +328,19 @@ export default function App() {
 
   const deckCount = remainingIds.size;
   const visibleDeckCount = Math.max(0, deckCount - flyingCards.length);
+  const selectorSummary = `${selection.size} selected`;
+  const selectorDeckLabel = `${visibleDeckCount} live`;
 
   return (
     <div className="min-h-screen flex flex-col max-w-5xl lg:max-w-6xl mx-auto">
       {/* Header */}
-      <header className="px-5 pt-5 pb-3 flex items-center justify-between">
-        <h1 className="text-lg tracking-tight" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
+      <header className="flex items-start justify-between gap-3 px-4 pt-4 pb-2 md:items-center md:px-5 md:pt-5 md:pb-3">
+        <h1 className="shrink-0 text-base tracking-tight md:text-lg" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
           <a href="/" className="hover:opacity-80 transition-opacity" title="Start a new game">
             renjie poker
           </a>
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
           <ThemeToggle />
           <button
             className={`btn-theme ${buttonFlash.newGame ? 'bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
@@ -323,13 +358,13 @@ export default function App() {
       </header>
 
       {/* Status */}
-      <main className="flex-1 flex flex-col px-5">
-        <div className="text-xs text-[var(--color-text-muted)] mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
+      <main className="flex-1 flex flex-col px-4 md:px-5">
+        <div className="mb-3 text-xs text-[var(--color-text-muted)] md:mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
           {message}
         </div>
 
         {/* Hands + Deck */}
-        <section className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6 items-start">
+        <section className="mb-4 flex flex-col items-start gap-3 md:mb-6 md:flex-row md:gap-6">
           {/* Player hand */}
           <div className="flex-1 min-w-0">
             <HandHeader
@@ -404,30 +439,74 @@ export default function App() {
         )}
 
         {/* Selection panel */}
-        <section className="mt-auto sticky bottom-0 border-t border-[var(--color-border)] bg-[var(--color-background)]/90 backdrop-blur-sm">
-          <div className="py-4">
-            <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3" style={{ fontFamily: "'DM Mono', monospace" }}>
-              Select from deck
-            </div>
-            <SelectionButtons
-              onSelectSuit={eng.selectSuit}
-              onSelectRank={eng.selectRank}
-              onSelectAll={eng.selectAll}
-              onClearSelection={eng.clearSelection}
-              onDeal={handleAnimatedDeal}
-              hasSelection={selection.size > 0}
-              canDeal={player.length < 5 && !isDealing}
-              disabled={isDealing}
-              buttonFlash={buttonFlash}
-            />
-            <div className="h-3" />
-            <div className={`max-h-[45vh] overflow-y-auto transition-opacity ${isDealing ? "opacity-60" : ""}`}>
-              <SelectionGrid
-                remainingIds={remainingIds}
-                selection={selection}
-                onToggle={eng.toggleSelect}
+        <section className="sticky bottom-0 z-20 mt-auto border-t border-[var(--color-border)] bg-[var(--color-background)]/92 backdrop-blur-md">
+          <div className="py-3 md:py-4">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-3 md:hidden"
+              onClick={() => setIsSelectorOpen((current) => !current)}
+              aria-expanded={isSelectorOpen}
+              aria-controls="selection-panel"
+            >
+              <div className="min-w-0 text-left">
+                <div
+                  className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                >
+                  Select from deck
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2 text-[11px]" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[var(--color-text)]">
+                    {selectorSummary}
+                  </span>
+                  <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
+                    {selectorDeckLabel}
+                  </span>
+                  <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
+                    {player.length}/5 cards
+                  </span>
+                </div>
+              </div>
+              <span
+                className="btn-theme min-w-[74px] justify-center"
+                aria-hidden="true"
+              >
+                {isSelectorOpen ? "close" : "open"}
+              </span>
+            </button>
+
+            <div
+              id="selection-panel"
+              className={[
+                isDesktop || isSelectorOpen ? "block" : "hidden",
+                !isDesktop
+                  ? "mt-3 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface)]/96 px-3 py-3 shadow-[0_12px_28px_color-mix(in_srgb,var(--color-text)_10%,transparent)]"
+                  : "",
+              ].join(" ")}
+            >
+              <div className="hidden text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3 md:block" style={{ fontFamily: "'DM Mono', monospace" }}>
+                Select from deck
+              </div>
+              <SelectionButtons
+                onSelectSuit={eng.selectSuit}
+                onSelectRank={eng.selectRank}
+                onSelectAll={eng.selectAll}
+                onClearSelection={eng.clearSelection}
+                onDeal={handleAnimatedDeal}
+                hasSelection={selection.size > 0}
+                canDeal={player.length < 5 && !isDealing}
                 disabled={isDealing}
+                buttonFlash={buttonFlash}
               />
+              <div className="h-3" />
+              <div className={`max-h-[50vh] overflow-y-auto pr-1 transition-opacity md:max-h-[45vh] ${isDealing ? "opacity-60" : ""}`}>
+                <SelectionGrid
+                  remainingIds={remainingIds}
+                  selection={selection}
+                  onToggle={eng.toggleSelect}
+                  disabled={isDealing}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -435,7 +514,7 @@ export default function App() {
 
       {/* Footer credit */}
       <footer
-        className="px-5 pt-3 pb-5 text-center text-xs text-[var(--color-text-muted)]"
+        className="px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1rem)] text-center text-[10px] text-[var(--color-text-muted)] md:px-5 md:pt-3 md:pb-5 md:text-xs"
         style={{ fontFamily: "'DM Mono', monospace" }}
       >
         game by Renjie You · site by Grace Tang

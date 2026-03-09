@@ -27,44 +27,58 @@ export default function SelectionButtons({
     buttonFlash[key] ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : '';
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full space-y-3 md:space-y-2">
       {/* Top row: Deal + actions */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-1.5">
         <button
-          className={`btn-theme ${hasSelection ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : 'opacity-30 cursor-not-allowed'} ${flashClass('deal')}`}
+          className={`btn-theme col-span-2 justify-center md:col-span-1 ${hasSelection ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : 'opacity-30 cursor-not-allowed'} ${flashClass('deal')}`}
           onClick={hasSelection && canDeal ? onDeal : undefined}
           disabled={!hasSelection || !canDeal}
         >
           deal
         </button>
-        <span className="w-px h-5 bg-[var(--color-border)]" />
+        <span className="hidden h-5 w-px bg-[var(--color-border)] md:block" />
         <button className={`btn-theme ${flashClass('selectAll')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onSelectAll} disabled={disabled}>all</button>
         <button className={`btn-theme ${flashClass('clear')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onClearSelection} disabled={disabled}>clear</button>
       </div>
 
       {/* Suits */}
-      <div className="flex items-center gap-1 flex-wrap">
-        {suitButtons.map(b => (
-          <button
-            key={b.key}
-            className={`btn-theme ${b.isRed ? 'text-[var(--color-suit-red)]' : ''} ${flashClass(`suit-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-            onClick={disabled ? undefined : () => onSelectSuit(b.key)}
-            disabled={disabled}
-          >
-            {b.symbol}
-          </button>
-        ))}
-        <span className="w-px h-5 bg-[var(--color-border)]" />
-        {rankButtons.map(b => (
-          <button
-            key={b.key}
-            className={`btn-theme ${flashClass(`rank-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-            onClick={disabled ? undefined : () => onSelectRank(b.key)}
-            disabled={disabled}
-          >
-            {b.symbol}
-          </button>
-        ))}
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <div className="px-0.5 text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)] md:hidden" style={{ fontFamily: "'DM Mono', monospace" }}>
+            Suits
+          </div>
+          <div className="grid grid-cols-4 gap-1.5 md:flex md:flex-wrap md:items-center md:gap-1">
+            {suitButtons.map(b => (
+              <button
+                key={b.key}
+                className={`btn-theme justify-center ${b.isRed ? 'text-[var(--color-suit-red)]' : ''} ${flashClass(`suit-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                onClick={disabled ? undefined : () => onSelectSuit(b.key)}
+                disabled={disabled}
+              >
+                {b.symbol}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="px-0.5 text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)] md:hidden" style={{ fontFamily: "'DM Mono', monospace" }}>
+            Ranks
+          </div>
+          <div className="grid grid-cols-7 gap-1.5 md:flex md:flex-wrap md:items-center md:gap-1">
+            {rankButtons.map(b => (
+              <button
+                key={b.key}
+                className={`btn-theme justify-center ${flashClass(`rank-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                onClick={disabled ? undefined : () => onSelectRank(b.key)}
+                disabled={disabled}
+              >
+                {b.symbol}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

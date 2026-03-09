@@ -6,8 +6,8 @@ export default function CardButton({ card, disabled = false, selected = false, o
     <button
       onClick={() => !disabled && onToggle?.(card)}
       className={[
-        "relative w-16 h-24 sm:w-16 sm:h-24 lg:w-20 lg:h-28",
-        "rounded border flex items-center justify-center m-0.5 cursor-pointer touch-manipulation select-none",
+        "relative w-full aspect-[2/3] md:h-24 md:aspect-auto lg:h-28",
+        "flex items-center justify-center rounded-xl border cursor-pointer touch-manipulation select-none md:rounded",
         "transition-all duration-150 active:scale-[0.98]",
         disabled
           ? "bg-[var(--color-background)] text-[var(--color-border)] cursor-not-allowed opacity-40"
@@ -23,8 +23,8 @@ export default function CardButton({ card, disabled = false, selected = false, o
           ? "text-white dark:text-white"
           : isRed ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"
       }>
-        <span className="font-medium text-base">{card.rank}</span>
-        <span className="ml-0.5 text-sm">{card.suit}</span>
+        <span className="text-sm font-medium md:text-base">{card.rank}</span>
+        <span className="ml-0.5 text-xs md:text-sm">{card.suit}</span>
       </span>
     </button>
   );
