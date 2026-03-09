@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
 import {
   EMPTY_STATS,
-  LEADERBOARD_MIN_HANDS,
+  fetchAppConfig,
   fetchAccountSnapshot,
   updateProfileSettings,
 } from "../lib/accountData";
@@ -104,14 +104,21 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(EMPTY_STATS);
   const [rank, setRank] = useState(null);
+  const [leaderboardMinHands, setLeaderboardMinHands] = useState(null);
   const [profileDraft, setProfileDraft] = useState({
     displayName: "",
     leaderboardName: "",
     leaderboardOptIn: false,
   });
 
-  const leaderboardEligible = stats.completedHands >= LEADERBOARD_MIN_HANDS;
-  const leaderboardProgress = Math.min(100, Math.round((stats.completedHands / LEADERBOARD_MIN_HANDS) * 100));
+  const hasLeaderboardConfig = typeof leaderboardMinHands === "number";
+  const leaderboardEligible = hasLeaderboardConfig && stats.completedHands >= leaderboardMinHands;
+  const leaderboardProgress = hasLeaderboardConfig
+    ? Math.min(100, Math.round((stats.completedHands / leaderboardMinHands) * 100))
+    : 0;
+  const leaderboardRequirementLabel = hasLeaderboardConfig
+    ? `${leaderboardMinHands} completed hands`
+    : "the configured completed-hand requirement";
   const title = auth.user ? "Account & History" : "Sign In";
 
   useEffect(() => {
@@ -132,11 +139,17 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
 
     try {
       if (auth.user) {
-        const snapshot = await fetchAccountSnapshot(auth.user.id);
+        const [config, snapshot] = await Promise.all([
+          fetchAppConfig(),
+          fetchAccountSnapshot(auth.user.id),
+        ]);
+        setLeaderboardMinHands(config.leaderboardMinHands);
         setHistory(snapshot.history);
         setStats(snapshot.stats);
         setRank(snapshot.rank);
       } else {
+        const config = await fetchAppConfig();
+        setLeaderboardMinHands(config.leaderboardMinHands);
         setHistory([]);
         setStats(EMPTY_STATS);
         setRank(null);
@@ -260,7 +273,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
           <div className="border border-[var(--color-border)] bg-[var(--color-background)] p-5">
             <SectionHeading eyebrow="Save Your Run" title="Sign in before your hot streak disappears">
               <p className="mt-2 max-w-xl text-sm text-[var(--color-text-muted)]">
-                Signed-in players get saved hand history, aggregate stats, and leaderboard eligibility once they reach {LEADERBOARD_MIN_HANDS} completed hands.
+                Signed-in players get saved hand history, aggregate stats, and leaderboard eligibility once they reach {leaderboardRequirementLabel}.
               </p>
             </SectionHeading>
             <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
@@ -341,7 +354,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
                   </div>
                   <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
                     <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>leaderboard</div>
-                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt-in unlocks after {LEADERBOARD_MIN_HANDS} completed hands.</div>
+                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt-in unlocks after {leaderboardRequirementLabel}.</div>
                   </div>
                 </div>
               </div>
@@ -414,7 +427,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
                   />
                   <input
                     className={INPUT_CLASS}
-                    placeholder={leaderboardEligible ? "leaderboard name" : `leaderboard name unlocks at ${LEADERBOARD_MIN_HANDS} hands`}
+                    placeholder={leaderboardEligible ? "leaderboard name" : `leaderboard name unlocks at ${leaderboardRequirementLabel}`}
                     value={profileDraft.leaderboardName}
                     onChange={(event) => setProfileDraft((prev) => ({ ...prev, leaderboardName: event.target.value }))}
                     disabled={!leaderboardEligible}
@@ -496,7 +509,9 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span>Leaderboard progress</span>
-                <span className="text-[var(--color-text-muted)]">{stats.completedHands}/{LEADERBOARD_MIN_HANDS}</span>
+                <span className="text-[var(--color-text-muted)]">
+                  {hasLeaderboardConfig ? `${stats.completedHands}/${leaderboardMinHands}` : `${stats.completedHands}/...`}
+                </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[var(--color-background)]">
                 <div className="h-full bg-[var(--color-accent)] transition-all" style={{ width: `${leaderboardProgress}%` }} />
@@ -504,7 +519,9 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
               <div className="text-sm text-[var(--color-text-muted)]">
                 {leaderboardEligible
                   ? "You can opt into the leaderboard now."
-                  : `${LEADERBOARD_MIN_HANDS - stats.completedHands} more completed hands to unlock leaderboard opt-in.`}
+                  : hasLeaderboardConfig
+                    ? `${leaderboardMinHands - stats.completedHands} more completed hands to unlock leaderboard opt-in.`
+                    : "Leaderboard requirement is loading."}
               </div>
             </div>
             <div className="space-y-2">
