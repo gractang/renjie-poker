@@ -5,6 +5,7 @@ import SelectionButtons from "../components/SelectionButtons";
 import ThemeToggle from "../components/ThemeToggle";
 import Modal from "../components/Modal";
 import RulesContent from "../components/RulesContent";
+import AboutContent from "../components/AboutContent";
 
 import { useState, useRef, useEffect } from "react";
 
@@ -16,6 +17,7 @@ export default function App() {
   } = eng;
 
   const [showRules, setShowRules] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [buttonFlash, setButtonFlash] = useState({});
   const dealButtonRef = useRef(null);
 
@@ -88,6 +90,12 @@ export default function App() {
           >
             ?
           </button>
+          <button
+            className="btn-theme"
+            onClick={() => setShowAbout(true)}
+          >
+            about
+          </button>
         </div>
       </header>
 
@@ -146,8 +154,20 @@ export default function App() {
         </section>
       </main>
 
+      {/* Footer credit */}
+      <footer
+        className="px-5 pt-3 pb-5 text-center text-xs text-[var(--color-text-muted)]"
+        style={{ fontFamily: "'DM Mono', monospace" }}
+      >
+        game by [Creator Name] · site by Grace Tang
+      </footer>
+
       <Modal open={showRules} onClose={() => setShowRules(false)} title="How to Play">
         <RulesContent />
+      </Modal>
+
+      <Modal open={showAbout} onClose={() => setShowAbout(false)} title="About">
+        <AboutContent />
       </Modal>
     </div>
   );
