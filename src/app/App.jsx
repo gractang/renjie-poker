@@ -8,14 +8,8 @@ import RulesContent from "../components/RulesContent";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const HAND_CARD_WIDTH = 48;
-const HAND_CARD_HEIGHT = 64;
-const HAND_CARD_GAP = 4;
-const CARD_DELAY = 210;
-const CARD_DURATION = 460;
-
 function FlyingCard({ card, from, to, delay, duration }) {
-  const [phase, setPhase] = useState("hidden");
+  const [phase, setPhase] = useState('hidden');
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('visible'), delay);
@@ -57,35 +51,6 @@ function FlyingCard({ card, from, to, delay, duration }) {
   );
 }
 
-function HandHeader({ label, countLabel, handName }) {
-  return (
-    <div className="mb-2 flex items-start justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <div
-          className="text-xs uppercase tracking-widest text-[var(--color-text-muted)]"
-          style={{ fontFamily: "'DM Mono', monospace" }}
-        >
-          {label}
-        </div>
-        {handName && (
-          <div
-            className="text-[11px] text-[var(--color-text-muted)]"
-            style={{ fontFamily: "'DM Mono', monospace" }}
-          >
-            hand: {handName}
-          </div>
-        )}
-      </div>
-      <div
-        className="shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]"
-        style={{ fontFamily: "'DM Mono', monospace" }}
-      >
-        {countLabel}
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   const eng = useRenjiePokerEngine();
   const {
@@ -94,69 +59,19 @@ export default function App() {
   } = eng;
 
   const [showRules, setShowRules] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.matchMedia("(min-width: 768px)").matches;
-  });
-  const [isSelectorOpen, setIsSelectorOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.matchMedia("(min-width: 768px)").matches;
-  });
   const [buttonFlash, setButtonFlash] = useState({});
   const [flyingCards, setFlyingCards] = useState([]);
   const [isDealing, setIsDealing] = useState(false);
+  const dealButtonRef = useRef(null);
   const deckRef = useRef(null);
   const playerHandRef = useRef(null);
   const dealerHandRef = useRef(null);
-  const commitTimeoutRef = useRef(null);
-
-  const clearPendingCommit = useCallback(() => {
-    if (commitTimeoutRef.current) {
-      clearTimeout(commitTimeoutRef.current);
-      commitTimeoutRef.current = null;
-    }
-  }, []);
-
-  const getCardTarget = useCallback((handEl, slotIndex) => {
-    const rowEl = handEl?.querySelector("[data-hand-row]");
-    const sampleCardEl = handEl?.querySelector("[data-hand-card]");
-
-    if (!rowEl) {
-      return null;
-    }
-
-    const rowRect = rowEl.getBoundingClientRect();
-    const cardRect = sampleCardEl?.getBoundingClientRect();
-    const rowStyles = window.getComputedStyle(rowEl);
-    const gapX = Number.parseFloat(rowStyles.columnGap || rowStyles.gap || `${HAND_CARD_GAP}`) || HAND_CARD_GAP;
-    const gapY = Number.parseFloat(rowStyles.rowGap || rowStyles.gap || `${HAND_CARD_GAP}`) || HAND_CARD_GAP;
-    const width = cardRect?.width || HAND_CARD_WIDTH;
-    const height = cardRect?.height || HAND_CARD_HEIGHT;
-    const wraps = rowEl.dataset.wrap === "true";
-
-    if (wraps) {
-      const columns = Math.max(1, Math.floor((rowRect.width + gapX) / (width + gapX)));
-      const column = slotIndex % columns;
-      const row = Math.floor(slotIndex / columns);
-
-      return {
-        x: rowRect.left + column * (width + gapX),
-        y: rowRect.top + row * (height + gapY),
-      };
-    }
-
-    return {
-      x: rowRect.left + slotIndex * (width + gapX),
-      y: rowRect.top + Math.max(0, (rowRect.height - height) / 2),
-    };
-  }, []);
 
   const handleReset = useCallback(() => {
-    clearPendingCommit();
     setFlyingCards([]);
     setIsDealing(false);
     eng.reset();
-  }, [clearPendingCommit, eng]);
+  }, [eng]);
 
   const handleAnimatedDeal = useCallback(() => {
     if (isDealing) return;
@@ -179,104 +94,80 @@ export default function App() {
     setIsDealing(true);
 
     const deckRect = deckEl.getBoundingClientRect();
+    const playerRect = playerEl.getBoundingClientRect();
+    const dealerRect = dealerEl.getBoundingClientRect();
+
     const from = {
-      x: deckRect.left + deckRect.width / 2 - HAND_CARD_WIDTH / 2,
-      y: deckRect.top + deckRect.height / 2 - HAND_CARD_HEIGHT / 2,
+      x: deckRect.left + deckRect.width / 2 - 24,
+      y: deckRect.top + deckRect.height / 2 - 32,
     };
+
+    const CARD_DELAY = 160;
+    const CARD_DURATION = 380;
 
     const cards = [];
 
+    // Dealer cards (burns)
     result.dealerCards.forEach((card, i) => {
-      const to = getCardTarget(dealerEl, dealer.length + i);
-      if (!to) return;
-
+      const idx = dealer.length + i;
       cards.push({
         id: `d-${Date.now()}-${i}`,
         card,
         from,
-        to,
+        to: {
+          x: dealerRect.left + Math.min(idx * 52, Math.max(0, dealerRect.width - 48)),
+          y: dealerRect.top,
+        },
         delay: i * CARD_DELAY,
         duration: CARD_DURATION,
       });
     });
 
+    // Player card
     if (result.playerCard) {
-      const to = getCardTarget(playerEl, player.length);
-      if (to) {
-        cards.push({
-          id: `p-${Date.now()}`,
-          card: result.playerCard,
-          from,
-          to,
-          delay: result.dealerCards.length * CARD_DELAY,
-          duration: CARD_DURATION,
-        });
-      }
+      cards.push({
+        id: `p-${Date.now()}`,
+        card: result.playerCard,
+        from,
+        to: {
+          x: playerRect.left + player.length * 52,
+          y: playerRect.top,
+        },
+        delay: result.dealerCards.length * CARD_DELAY,
+        duration: CARD_DURATION,
+      });
     }
 
+    // TopUp cards (when game ends, dealer gets filled to 8)
     if (result.topUpCards && result.topUpCards.length > 0) {
       const dealerCountAfterDeal = dealer.length + result.dealerCards.length;
       const topUpStartDelay = cards.length * CARD_DELAY + 350;
 
       result.topUpCards.forEach((card, i) => {
-        const to = getCardTarget(dealerEl, dealerCountAfterDeal + i);
-        if (!to) return;
-
+        const idx = dealerCountAfterDeal + i;
         cards.push({
           id: `t-${Date.now()}-${i}`,
           card,
           from,
-          to,
+          to: {
+            x: dealerRect.left + Math.min(idx * 52, Math.max(0, dealerRect.width - 48)),
+            y: dealerRect.top,
+          },
           delay: topUpStartDelay + i * CARD_DELAY,
           duration: CARD_DURATION,
         });
       });
     }
 
-    if (cards.length === 0) {
-      setIsDealing(false);
-      eng.deal();
-      return;
-    }
-
     setFlyingCards(cards);
 
     const lastDelay = cards.length > 0 ? cards[cards.length - 1].delay : 0;
-    clearPendingCommit();
-    commitTimeoutRef.current = setTimeout(() => {
+    setTimeout(() => {
       eng.commitDeal(result);
       setFlyingCards([]);
       setIsDealing(false);
-      commitTimeoutRef.current = null;
     }, lastDelay + CARD_DURATION + 60);
-  }, [clearPendingCommit, dealer.length, eng, getCardTarget, isDealing, player.length]);
-
-  useEffect(() => clearPendingCommit, [clearPendingCommit]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 768px)");
-    const syncViewport = (event) => {
-      const desktop = event?.matches ?? mediaQuery.matches;
-      setIsDesktop(desktop);
-      setIsSelectorOpen((current) => (desktop ? true : current));
-    };
-
-    syncViewport();
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener("change", syncViewport);
-      return () => mediaQuery.removeEventListener("change", syncViewport);
-    }
-
-    mediaQuery.addListener(syncViewport);
-    return () => mediaQuery.removeListener(syncViewport);
-  }, []);
-
-  useEffect(() => {
-    if (!isDesktop && player.length > 0 && !isDealing) {
-      setIsSelectorOpen(false);
-    }
-  }, [isDesktop, isDealing, player.length]);
+  }, [eng, isDealing, player.length, dealer.length]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -327,20 +218,15 @@ export default function App() {
   }, [selection.size, player.length, showRules, eng, isDealing, handleAnimatedDeal, handleReset]);
 
   const deckCount = remainingIds.size;
-  const visibleDeckCount = Math.max(0, deckCount - flyingCards.length);
-  const selectorSummary = `${selection.size} selected`;
-  const selectorDeckLabel = `${visibleDeckCount} live`;
 
   return (
-    <div className="min-h-screen flex flex-col max-w-5xl lg:max-w-6xl mx-auto">
+    <div className="min-h-screen flex flex-col max-w-5xl mx-auto">
       {/* Header */}
-      <header className="flex items-start justify-between gap-3 px-4 pt-4 pb-2 md:items-center md:px-5 md:pt-5 md:pb-3">
-        <h1 className="shrink-0 text-base tracking-tight md:text-lg" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
-          <a href="/" className="hover:opacity-80 transition-opacity" title="Start a new game">
-            renjie poker
-          </a>
+      <header className="px-5 pt-5 pb-3 flex items-center justify-between">
+        <h1 className="text-lg tracking-tight" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
+          renjie poker
         </h1>
-        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+        <div className="flex items-center gap-2">
           <ThemeToggle />
           <button
             className={`btn-theme ${buttonFlash.newGame ? 'bg-[var(--color-accent)] text-[var(--color-background)]' : ''}`}
@@ -358,66 +244,56 @@ export default function App() {
       </header>
 
       {/* Status */}
-      <main className="flex-1 flex flex-col px-4 md:px-5">
-        <div className="mb-3 text-xs text-[var(--color-text-muted)] md:mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
+      <main className="flex-1 flex flex-col px-5">
+        <div className="text-xs text-[var(--color-text-muted)] mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
           {message}
         </div>
 
         {/* Hands + Deck */}
-        <section className="mb-4 flex flex-col items-start gap-3 md:mb-6 md:flex-row md:gap-6">
+        <section className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6 items-start">
           {/* Player hand */}
           <div className="flex-1 min-w-0">
-            <HandHeader
-              label="Player"
-              countLabel={`${player.length}/5 cards`}
-              handName={playerEval?.name}
-            />
+            <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-2" style={{ fontFamily: "'DM Mono', monospace" }}>
+              Player · {player.length}/5
+              {playerEval && <span className="ml-2 normal-case tracking-normal">{playerEval.name}</span>}
+            </div>
             <div ref={playerHandRef}>
               <HandRow cards={player} highlightBest={playerEval?.bestFive || null} />
             </div>
-            {visibleDeckCount > 0 && (
-              <div className="mt-3 flex items-start">
-                <div
-                  ref={deckRef}
-                  className="deck-shell flex items-center gap-3 py-2 px-3"
-                >
-                  <div className="relative shrink-0" style={{ width: 52, height: 68 }}>
-                    {visibleDeckCount > 2 && (
-                      <div className="card-back absolute rounded" style={{ top: 0, left: 0 }} />
-                    )}
-                    {visibleDeckCount > 1 && (
-                      <div className="card-back absolute rounded" style={{ top: 2, left: 2 }} />
-                    )}
-                    <div className="card-back absolute rounded" style={{ top: 4, left: 4 }} />
-                  </div>
-                  <div className="leading-tight">
-                    <div
-                      className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]"
-                      style={{ fontFamily: "'DM Mono', monospace" }}
-                    >
-                      deck
-                    </div>
-                    <div
-                      className="text-xs tabular-nums text-[var(--color-text)]"
-                      style={{ fontFamily: "'DM Mono', monospace" }}
-                    >
-                      {visibleDeckCount} live
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Deck */}
+          {deckCount > 0 && (
+            <div
+              ref={deckRef}
+              className="flex flex-row md:flex-col items-center justify-center gap-2 py-1 md:pt-6 shrink-0 self-center md:self-start"
+            >
+              <div className="relative" style={{ width: 52, height: 68 }}>
+                {deckCount > 2 && (
+                  <div className="card-back absolute rounded" style={{ top: 0, left: 0 }} />
+                )}
+                {deckCount > 1 && (
+                  <div className="card-back absolute rounded" style={{ top: 2, left: 2 }} />
+                )}
+                <div className="card-back absolute rounded" style={{ top: 4, left: 4 }} />
+              </div>
+              <span
+                className="text-[10px] text-[var(--color-text-muted)] tabular-nums"
+                style={{ fontFamily: "'DM Mono', monospace" }}
+              >
+                {deckCount}
+              </span>
+            </div>
+          )}
 
           {/* Dealer hand */}
           <div className="flex-1 min-w-0">
-            <HandHeader
-              label="Dealer"
-              countLabel={`${dealer.length} cards`}
-              handName={dealerEval?.name}
-            />
+            <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-2" style={{ fontFamily: "'DM Mono', monospace" }}>
+              Dealer · {dealer.length}
+              {dealerEval && <span className="ml-2 normal-case tracking-normal">{dealerEval.name}</span>}
+            </div>
             <div ref={dealerHandRef}>
-              <HandRow cards={dealer} highlightBest={dealerEval?.bestFive || null} wrap />
+              <HandRow cards={dealer} highlightBest={dealerEval?.bestFive || null} />
             </div>
           </div>
         </section>
@@ -439,86 +315,34 @@ export default function App() {
         )}
 
         {/* Selection panel */}
-        <section className="sticky bottom-0 z-20 mt-auto border-t border-[var(--color-border)] bg-[var(--color-background)]/92 backdrop-blur-md">
-          <div className="py-3 md:py-4">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between gap-3 md:hidden"
-              onClick={() => setIsSelectorOpen((current) => !current)}
-              aria-expanded={isSelectorOpen}
-              aria-controls="selection-panel"
-            >
-              <div className="min-w-0 text-left">
-                <div
-                  className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]"
-                  style={{ fontFamily: "'DM Mono', monospace" }}
-                >
-                  Select from deck
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px]" style={{ fontFamily: "'DM Mono', monospace" }}>
-                  <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[var(--color-text)]">
-                    {selectorSummary}
-                  </span>
-                  <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
-                    {selectorDeckLabel}
-                  </span>
-                  <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
-                    {player.length}/5 cards
-                  </span>
-                </div>
-              </div>
-              <span
-                className="btn-theme min-w-[74px] justify-center"
-                aria-hidden="true"
-              >
-                {isSelectorOpen ? "close" : "open"}
-              </span>
-            </button>
-
-            <div
-              id="selection-panel"
-              className={[
-                isDesktop || isSelectorOpen ? "block" : "hidden",
-                !isDesktop
-                  ? "mt-3 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface)]/96 px-3 py-3 shadow-[0_12px_28px_color-mix(in_srgb,var(--color-text)_10%,transparent)]"
-                  : "",
-              ].join(" ")}
-            >
-              <div className="hidden text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3 md:block" style={{ fontFamily: "'DM Mono', monospace" }}>
-                Select from deck
-              </div>
-              <SelectionButtons
+        <section className="mt-auto sticky bottom-0 border-t border-[var(--color-border)] bg-[var(--color-background)]/90 backdrop-blur-sm">
+          <div className="py-4">
+            <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3" style={{ fontFamily: "'DM Mono', monospace" }}>
+              Select from deck
+            </div>
+            <SelectionButtons
+              onSelectSuit={eng.selectSuit}
+              onSelectRank={eng.selectRank}
+              onSelectAll={eng.selectAll}
+              onClearSelection={eng.clearSelection}
+              onDeal={handleAnimatedDeal}
+              hasSelection={selection.size > 0}
+              canDeal={player.length < 5 && !isDealing}
+              buttonFlash={buttonFlash}
+              dealButtonRef={dealButtonRef}
+            />
+            <div className="h-3" />
+            <div className="max-h-[45vh] overflow-y-auto">
+              <SelectionGrid
+                remainingIds={remainingIds}
+                selection={selection}
+                onToggle={eng.toggleSelect}
                 onSelectSuit={eng.selectSuit}
-                onSelectRank={eng.selectRank}
-                onSelectAll={eng.selectAll}
-                onClearSelection={eng.clearSelection}
-                onDeal={handleAnimatedDeal}
-                hasSelection={selection.size > 0}
-                canDeal={player.length < 5 && !isDealing}
-                disabled={isDealing}
-                buttonFlash={buttonFlash}
               />
-              <div className="h-3" />
-              <div className={`max-h-[50vh] overflow-y-auto pr-1 transition-opacity md:max-h-[45vh] ${isDealing ? "opacity-60" : ""}`}>
-                <SelectionGrid
-                  remainingIds={remainingIds}
-                  selection={selection}
-                  onToggle={eng.toggleSelect}
-                  disabled={isDealing}
-                />
-              </div>
             </div>
           </div>
         </section>
       </main>
-
-      {/* Footer credit */}
-      <footer
-        className="px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1rem)] text-center text-[10px] text-[var(--color-text-muted)] md:px-5 md:pt-3 md:pb-5 md:text-xs"
-        style={{ fontFamily: "'DM Mono', monospace" }}
-      >
-        game by Renjie You · site by Grace Tang
-      </footer>
 
       <Modal open={showRules} onClose={() => setShowRules(false)} title="How to Play">
         <RulesContent />
