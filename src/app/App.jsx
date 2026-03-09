@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
 import { saveCompletedGameRecord } from "../lib/accountData";
@@ -859,6 +860,7 @@ export default function App() {
         syncStatus={syncStatus}
       />
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
