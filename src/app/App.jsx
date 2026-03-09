@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
 import { saveCompletedGameRecord } from "../lib/accountData";
@@ -857,6 +858,7 @@ export default function App() {
         refreshToken={accountRefreshToken}
         syncStatus={syncStatus}
       />
+      <Analytics />
     </div>
   );
 }
