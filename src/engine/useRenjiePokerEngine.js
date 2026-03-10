@@ -83,9 +83,13 @@ export default function useRenjiePokerEngine() {
   const selectSuit = useCallback((suitKey) => {
     setGame(prev => {
       if (prev.gameOver) return prev;
+      const suitCards = prev.remaining.filter(c => c.suitKey === suitKey);
+      const allSelected = suitCards.length > 0 && suitCards.every(c => prev.selection.has(cardId(c)));
       const nextSel = new Set(prev.selection);
-      for (const c of prev.remaining) {
-        if (c.suitKey === suitKey) nextSel.add(cardId(c));
+      if (allSelected) {
+        for (const c of suitCards) nextSel.delete(cardId(c));
+      } else {
+        for (const c of suitCards) nextSel.add(cardId(c));
       }
       return { ...prev, selection: nextSel };
     });
@@ -94,9 +98,13 @@ export default function useRenjiePokerEngine() {
   const selectRank = useCallback((rank) => {
     setGame(prev => {
       if (prev.gameOver) return prev;
+      const rankCards = prev.remaining.filter(c => c.rank === rank);
+      const allSelected = rankCards.length > 0 && rankCards.every(c => prev.selection.has(cardId(c)));
       const nextSel = new Set(prev.selection);
-      for (const c of prev.remaining) {
-        if (c.rank === rank) nextSel.add(cardId(c));
+      if (allSelected) {
+        for (const c of rankCards) nextSel.delete(cardId(c));
+      } else {
+        for (const c of rankCards) nextSel.add(cardId(c));
       }
       return { ...prev, selection: nextSel };
     });
@@ -105,6 +113,10 @@ export default function useRenjiePokerEngine() {
   const selectAll = useCallback(() => {
     setGame(prev => {
       if (prev.gameOver) return prev;
+      const allSelected = prev.remaining.length > 0 && prev.remaining.every(c => prev.selection.has(cardId(c)));
+      if (allSelected) {
+        return { ...prev, selection: new Set() };
+      }
       const nextSel = new Set(prev.selection);
       for (const c of prev.remaining) nextSel.add(cardId(c));
       return { ...prev, selection: nextSel };
@@ -152,6 +164,7 @@ export default function useRenjiePokerEngine() {
   return {
     player: game.player,
     dealer: game.dealer,
+    remaining: game.remaining,
     remainingIds,
     selection: game.selection,
     message: game.message,

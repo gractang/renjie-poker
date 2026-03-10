@@ -1,4 +1,5 @@
-import { RANKS, SUITS, SUIT_KEYS, isRedSuit } from "../lib/deck";
+import { useMemo } from "react";
+import { RANKS, SUITS, SUIT_KEYS, isRedSuit, cardId } from "../lib/deck";
 
 export default function SelectionButtons({
   onSelectSuit,
@@ -10,6 +11,8 @@ export default function SelectionButtons({
   canDeal,
   disabled = false,
   buttonFlash,
+  selection,
+  remaining,
 }) {
   const suitButtons = SUIT_KEYS.map((key, index) => ({
     key,
@@ -23,6 +26,27 @@ export default function SelectionButtons({
     isRed: false
   }));
 
+  const activeButtons = useMemo(() => {
+    if (!selection || !remaining) return {};
+    const active = {};
+    // Check each suit
+    for (const suitKey of SUIT_KEYS) {
+      const suitCards = remaining.filter(c => c.suitKey === suitKey);
+      active[`suit-${suitKey}`] = suitCards.length > 0 && suitCards.every(c => selection.has(cardId(c)));
+    }
+    // Check each rank
+    for (const rank of RANKS) {
+      const rankCards = remaining.filter(c => c.rank === rank);
+      active[`rank-${rank}`] = rankCards.length > 0 && rankCards.every(c => selection.has(cardId(c)));
+    }
+    // Check all
+    active.selectAll = remaining.length > 0 && remaining.every(c => selection.has(cardId(c)));
+    return active;
+  }, [selection, remaining]);
+
+  const activeClass = (key) =>
+    activeButtons[key] ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : '';
+
   const flashClass = (key) =>
     buttonFlash[key] ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : '';
 
@@ -31,14 +55,14 @@ export default function SelectionButtons({
       {/* Top row: Deal + actions */}
       <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-1.5">
         <button
-          className={`btn-theme col-span-2 justify-center md:col-span-1 ${hasSelection ? 'bg-[var(--color-accent)] text-[var(--color-background)] border-[var(--color-accent)]' : 'opacity-30 cursor-not-allowed'} ${flashClass('deal')}`}
+          className={`btn-theme col-span-2 justify-center md:col-span-1 ${hasSelection && canDeal ? 'cta-glow border-[var(--color-accent)] text-[var(--color-accent)]' : 'opacity-30 cursor-not-allowed'} ${flashClass('deal')}`}
           onClick={hasSelection && canDeal ? onDeal : undefined}
           disabled={!hasSelection || !canDeal}
         >
           deal
         </button>
         <span className="hidden h-5 w-px bg-[var(--color-border)] md:block" />
-        <button className={`btn-theme ${flashClass('selectAll')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onSelectAll} disabled={disabled}>all</button>
+        <button className={`btn-theme ${activeClass('selectAll')} ${flashClass('selectAll')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onSelectAll} disabled={disabled}>all</button>
         <button className={`btn-theme ${flashClass('clear')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onClearSelection} disabled={disabled}>clear</button>
       </div>
 
@@ -52,7 +76,7 @@ export default function SelectionButtons({
             {suitButtons.map(b => (
               <button
                 key={b.key}
-                className={`btn-theme justify-center ${b.isRed ? 'text-[var(--color-suit-red)]' : ''} ${flashClass(`suit-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`btn-theme justify-center ${b.isRed && !activeButtons[`suit-${b.key}`] ? 'text-[var(--color-suit-red)]' : ''} ${activeClass(`suit-${b.key}`)} ${flashClass(`suit-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 onClick={disabled ? undefined : () => onSelectSuit(b.key)}
                 disabled={disabled}
               >
@@ -72,7 +96,7 @@ export default function SelectionButtons({
             {rankButtons.map(b => (
               <button
                 key={b.key}
-                className={`btn-theme justify-center ${flashClass(`rank-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`btn-theme justify-center ${activeClass(`rank-${b.key}`)} ${flashClass(`rank-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 onClick={disabled ? undefined : () => onSelectRank(b.key)}
                 disabled={disabled}
               >
