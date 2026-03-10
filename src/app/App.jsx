@@ -713,7 +713,7 @@ export default function App() {
             {auth.user ? <UserIcon className="h-4 w-4" /> : "log in"}
           </button>
           <button
-            className={`btn-theme ${gameOver ? "new-game-cta border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
+            className={`btn-theme ${gameOver ? "cta-glow border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
             onClick={handleReset}
             type="button"
           >
@@ -876,6 +876,8 @@ export default function App() {
                 onSelectAll={eng.selectAll}
                 onSelectRank={eng.selectRank}
                 onSelectSuit={eng.selectSuit}
+                remaining={eng.remaining}
+                selection={selection}
               />
               <div className="h-3" />
               <div className={`max-h-[50vh] overflow-y-auto pr-1 transition-opacity md:max-h-[45vh] ${selectionDisabled ? "opacity-60" : ""}`}>

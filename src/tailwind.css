@@ -51,7 +51,6 @@
     --leading-relaxed: 1.625;
     --radius-xl: 0.75rem;
     --radius-2xl: 1rem;
-    --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     --blur-sm: 8px;
     --blur-md: 12px;
     --default-transition-duration: 150ms;
@@ -1228,7 +1227,7 @@
     --color-border: #e4ddd2;
     --color-accent: #52b788;
     --color-selected: #52b788;
-    --new-game-border-glint: #2f7152;
+    --cta-glow-glint: #2f7152;
     --color-suit-red: #b5342a;
     --color-suit-black: #2c2418;
     font-synthesis: none;
@@ -1245,7 +1244,7 @@
     --color-border: #3a3428;
     --color-accent: #52b788;
     --color-selected: #52b788;
-    --new-game-border-glint: #d7f0e2;
+    --cta-glow-glint: #d7f0e2;
     --color-suit-red: #e07060;
     --color-suit-black: #e8e2d6;
   }
@@ -1379,29 +1378,29 @@
     width: calc(var(--spacing) * 8);
     padding: calc(var(--spacing) * 0);
   }
-  .new-game-cta {
+  .cta-glow {
     position: relative;
     isolation: isolate;
   }
-  .new-game-cta::before {
+  .cta-glow::before {
     content: "";
     position: absolute;
     inset: -2px;
     border-radius: inherit;
     padding: 2px;
-    background: conic-gradient( from var(--new-game-border-angle), var(--new-game-border-glint) 0deg, var(--color-accent) 72deg, var(--color-accent) 144deg, var(--new-game-border-glint) 216deg, var(--color-accent) 288deg, var(--new-game-border-glint) 360deg );
+    background: conic-gradient( from var(--cta-glow-angle), var(--cta-glow-glint) 0deg, var(--color-accent) 72deg, var(--color-accent) 144deg, var(--cta-glow-glint) 216deg, var(--color-accent) 288deg, var(--cta-glow-glint) 360deg );
     @supports (color: color-mix(in lab, red, red)) {
-      background: conic-gradient( from var(--new-game-border-angle), var(--new-game-border-glint) 0deg, color-mix(in srgb, var(--color-accent) 88%, #1b3a2d) 72deg, color-mix(in srgb, var(--color-accent) 62%, #0f231b) 144deg, var(--new-game-border-glint) 216deg, color-mix(in srgb, var(--color-accent) 92%, #173127) 288deg, var(--new-game-border-glint) 360deg );
+      background: conic-gradient( from var(--cta-glow-angle), var(--cta-glow-glint) 0deg, color-mix(in srgb, var(--color-accent) 88%, #1b3a2d) 72deg, color-mix(in srgb, var(--color-accent) 62%, #0f231b) 144deg, var(--cta-glow-glint) 216deg, color-mix(in srgb, var(--color-accent) 92%, #173127) 288deg, var(--cta-glow-glint) 360deg );
     }
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-    animation: new-game-border-shift 1.8s linear infinite;
+    animation: cta-glow-shift 1.8s linear infinite;
     pointer-events: none;
   }
-  @keyframes new-game-border-shift {
+  @keyframes cta-glow-shift {
     to {
-      --new-game-border-angle: 1turn;
+      --cta-glow-angle: 1turn;
     }
   }
 }
@@ -1410,13 +1409,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
-@property --new-game-border-angle {
+@property --cta-glow-angle {
   syntax: "<angle>";
   inherits: false;
   initial-value: 0deg;
 }
 @media (prefers-reduced-motion: reduce) {
-  .new-game-cta::before {
+  .cta-glow::before {
     animation: none;
   }
 }
@@ -1645,11 +1644,6 @@ body {
   inherits: false;
   initial-value: solid;
 }
-@keyframes pulse {
-  50% {
-    opacity: 0.5;
-  }
-}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
@@ -1706,7 +1700,7 @@ body {
       --tw-backdrop-sepia: initial;
       --tw-duration: initial;
       --tw-outline-style: solid;
-      --new-game-border-angle: 0deg;
+      --cta-glow-angle: 0deg;
     }
   }
 }

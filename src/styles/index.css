@@ -15,7 +15,7 @@
     --color-border:      #e4ddd2;
     --color-accent:      #52b788;
     --color-selected:    #52b788;
-    --new-game-border-glint: #2f7152;
+    --cta-glow-glint: #2f7152;
     --color-suit-red:    #b5342a;
     --color-suit-black:  #2c2418;
 
@@ -34,7 +34,7 @@
     --color-border:      #3a3428;
     --color-accent:      #52b788;
     --color-selected:    #52b788;
-    --new-game-border-glint: #d7f0e2;
+    --cta-glow-glint: #d7f0e2;
     --color-suit-red:    #e07060;
     --color-suit-black:  #e8e2d6;
   }
@@ -96,35 +96,35 @@
     @apply h-8 w-8 p-0;
   }
 
-  .new-game-cta {
+  .cta-glow {
     position: relative;
     isolation: isolate;
   }
 
-  .new-game-cta::before {
+  .cta-glow::before {
     content: "";
     position: absolute;
     inset: -2px;
     border-radius: inherit;
     padding: 2px;
     background: conic-gradient(
-      from var(--new-game-border-angle),
-      var(--new-game-border-glint) 0deg,
+      from var(--cta-glow-angle),
+      var(--cta-glow-glint) 0deg,
       color-mix(in srgb, var(--color-accent) 88%, #1b3a2d) 72deg,
       color-mix(in srgb, var(--color-accent) 62%, #0f231b) 144deg,
-      var(--new-game-border-glint) 216deg,
+      var(--cta-glow-glint) 216deg,
       color-mix(in srgb, var(--color-accent) 92%, #173127) 288deg,
-      var(--new-game-border-glint) 360deg
+      var(--cta-glow-glint) 360deg
     );
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-    animation: new-game-border-shift 1.8s linear infinite;
+    animation: cta-glow-shift 1.8s linear infinite;
     pointer-events: none;
   }
 
-  @keyframes new-game-border-shift {
-    to { --new-game-border-angle: 1turn; }
+  @keyframes cta-glow-shift {
+    to { --cta-glow-angle: 1turn; }
   }
 }
 
@@ -134,14 +134,14 @@ body {
   min-height: 100vh;
 }
 
-@property --new-game-border-angle {
+@property --cta-glow-angle {
   syntax: "<angle>";
   inherits: false;
   initial-value: 0deg;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .new-game-cta::before {
+  .cta-glow::before {
     animation: none;
   }
 }
