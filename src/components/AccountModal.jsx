@@ -46,10 +46,6 @@ function StatCard({ label, value, detail }) {
 }
 
 export default function AccountModal({ open, onClose, auth, refreshToken, syncStatus, onOpenLeaderboard, onOpenHistory }) {
-  const [authMode, setAuthMode] = useState("sign-in");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [localMessage, setLocalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -129,30 +125,6 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
       await auth.signInWithGoogle();
     } catch (error) {
       setLocalMessage(error.message ?? "Could not start Google sign-in.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleEmailSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setLocalMessage("");
-
-    try {
-      if (authMode === "sign-up") {
-        const response = await auth.signUpWithPassword({ email, password, displayName });
-        setLocalMessage(
-          response.session
-            ? "Account created and signed in."
-            : "Account created. Check your email if verification is enabled."
-        );
-      } else {
-        await auth.signInWithPassword({ email, password });
-        setLocalMessage("Signed in.");
-      }
-    } catch (error) {
-      setLocalMessage(error.message ?? "Authentication failed.");
     } finally {
       setSubmitting(false);
     }
@@ -240,58 +212,8 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
                   <span>continue with google</span>
                   <span className="text-xs opacity-70">&rarr;</span>
                 </button>
-                <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>
-                  <span className="h-px flex-1 bg-[var(--color-border)]" />
-                  <span>or email and password</span>
-                  <span className="h-px flex-1 bg-[var(--color-border)]" />
-                </div>
-                <form className="space-y-3" onSubmit={handleEmailSubmit}>
-                  {authMode === "sign-up" && (
-                    <input
-                      className={INPUT_CLASS}
-                      placeholder="display name"
-                      value={displayName}
-                      onChange={(event) => setDisplayName(event.target.value)}
-                    />
-                  )}
-                  <input
-                    className={INPUT_CLASS}
-                    type="email"
-                    placeholder="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                  />
-                  <input
-                    className={INPUT_CLASS}
-                    type="password"
-                    placeholder="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    minLength={8}
-                  />
-                  <button className="btn-theme w-full justify-between px-4 py-3" disabled={submitting} type="submit">
-                    <span>{authMode === "sign-up" ? "create account" : "sign in"}</span>
-                    <span className="text-xs opacity-70">&rarr;</span>
-                  </button>
-                </form>
-                <div className="text-center text-sm text-[var(--color-text-muted)]">
-                  {authMode === "sign-in" ? (
-                    <>
-                      Don&apos;t have an account?{" "}
-                      <button className="underline text-[var(--color-text)] hover:opacity-80" onClick={() => setAuthMode("sign-up")} type="button">
-                        Create one
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{" "}
-                      <button className="underline text-[var(--color-text)] hover:opacity-80" onClick={() => setAuthMode("sign-in")} type="button">
-                        Sign in
-                      </button>
-                    </>
-                  )}
+                <div className="text-sm text-[var(--color-text-muted)]">
+                  Email/password sign-in is disabled. Use Google to continue.
                 </div>
               </div>
 
