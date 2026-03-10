@@ -51,7 +51,6 @@
     --leading-relaxed: 1.625;
     --radius-xl: 0.75rem;
     --radius-2xl: 1rem;
-    --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     --blur-sm: 8px;
     --blur-md: 12px;
     --default-transition-duration: 150ms;
@@ -1644,11 +1643,6 @@ body {
   syntax: "*";
   inherits: false;
   initial-value: solid;
-}
-@keyframes pulse {
-  50% {
-    opacity: 0.5;
-  }
 }
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
