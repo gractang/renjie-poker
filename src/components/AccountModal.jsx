@@ -197,43 +197,30 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
       {auth.hasSupabaseConfig && !auth.loading && !auth.user && (
         <div className="space-y-6">
           <div className="border border-[var(--color-border)] bg-[var(--color-background)] p-5">
-            <SectionHeading eyebrow="Save Your Run" title="Sign in before your hot streak disappears">
-              <p className="mt-2 max-w-xl text-sm text-[var(--color-text-muted)]">
-                Signed-in players get saved hand history, aggregate stats, and leaderboard eligibility once they reach {leaderboardRequirementLabel}.
-              </p>
-            </SectionHeading>
-            <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="space-y-3">
-                <button
-                  className="btn-theme w-full justify-between border-[var(--color-text)] bg-[var(--color-text)] px-4 py-3 text-[var(--color-background)] hover:border-[var(--color-text)] hover:bg-[var(--color-text)]"
-                  onClick={handleGoogle}
-                  disabled={submitting}
-                >
-                  <span>continue with google</span>
-                  <span className="text-xs opacity-70">&rarr;</span>
-                </button>
-                <div className="text-sm text-[var(--color-text-muted)]">
-                  Email/password sign-in is disabled. Use Google to continue.
-                </div>
+            <SectionHeading eyebrow="Save Your Run" title="Sign in before your hot streak disappears" />
+            <div className="mt-5 grid gap-3 md:grid-cols-3 lg:grid-cols-1">
+              <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>history</div>
+                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Completed hands stay attached to your account.</div>
               </div>
-
-              <div className="space-y-4 border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-                <div className="text-sm">What unlocks after sign-in</div>
-                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-1">
-                  <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>history</div>
-                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Completed hands stay attached to your account.</div>
-                  </div>
-                  <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>stats</div>
-                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Win rate and hand frequency update from your saved sessions.</div>
-                  </div>
-                  <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>leaderboard</div>
-                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt-in unlocks after {leaderboardRequirementLabel}.</div>
-                  </div>
-                </div>
+              <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>stats</div>
+                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Win rate and hand frequency update from your saved sessions.</div>
               </div>
+              <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>leaderboard</div>
+                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt-in unlocks after {leaderboardRequirementLabel}.</div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <button
+                className="btn-theme w-full justify-between border-[var(--color-text)] bg-[var(--color-text)] px-4 py-3 text-[var(--color-background)] hover:border-[var(--color-text)] hover:bg-[var(--color-text)]"
+                onClick={handleGoogle}
+                disabled={submitting}
+              >
+                <span>continue with google</span>
+                <span className="text-xs opacity-70">&rarr;</span>
+              </button>
             </div>
           </div>
 
