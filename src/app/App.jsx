@@ -272,6 +272,7 @@ export default function App() {
   const playerHandRef = useRef(null);
   const dealerHandRef = useRef(null);
   const commitTimeoutRef = useRef(null);
+  const cleanupTimeoutRef = useRef(null);
   const lastSyncedKeyRef = useRef(null);
   const syncingKeyRef = useRef(null);
 
@@ -279,6 +280,10 @@ export default function App() {
     if (commitTimeoutRef.current) {
       clearTimeout(commitTimeoutRef.current);
       commitTimeoutRef.current = null;
+    }
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
     }
   }, []);
 
@@ -431,14 +436,23 @@ export default function App() {
 
     setFlyingCards(cards);
 
+    const playerEntry = cards.find((fc) => fc.id.startsWith("p-"));
     const lastDelay = cards.length > 0 ? cards[cards.length - 1].delay : 0;
+    const commitTime = playerEntry
+      ? playerEntry.delay + CARD_DURATION + 60
+      : lastDelay + CARD_DURATION + 60;
+    const allDoneTime = lastDelay + CARD_DURATION + 60;
+
     clearPendingCommit();
     commitTimeoutRef.current = setTimeout(() => {
       eng.commitDeal(result);
+      commitTimeoutRef.current = null;
+    }, commitTime);
+    cleanupTimeoutRef.current = setTimeout(() => {
       setFlyingCards([]);
       setIsDealing(false);
-      commitTimeoutRef.current = null;
-    }, lastDelay + CARD_DURATION + 60);
+      cleanupTimeoutRef.current = null;
+    }, allDoneTime);
   }, [clearPendingCommit, dealer.length, eng, getCardTarget, isDealing, player.length]);
 
   useEffect(() => clearPendingCommit, [clearPendingCommit]);
