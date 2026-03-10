@@ -1,7 +1,7 @@
-import { formatCard } from "../lib/deck";
+import { formatCard, isRedSuit } from "../lib/deck";
 
 export default function CardButton({ card, disabled = false, selected = false, onToggle }) {
-  const isRed = card.suitKey === "H" || card.suitKey === "D";
+  const isRed = isRedSuit(card);
 
   return (
     <button

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
 import { saveCompletedGameRecord } from "../lib/accountData";
+import { isRedSuit } from "../lib/deck";
 import HandRow from "../components/HandRow";
 import SelectionGrid from "../components/SelectionGrid";
 import SelectionButtons from "../components/SelectionButtons";
@@ -92,7 +93,7 @@ function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
 
   const isFlying = phase === "flying";
   const pos = isFlying ? to : from;
-  const isRed = card.suitKey === "H" || card.suitKey === "D";
+  const red = isRedSuit(card);
 
   return (
     <div
@@ -112,10 +113,10 @@ function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
         pointerEvents: "none",
       }}
     >
-      <span className={`font-medium ${isRed ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
+      <span className={`font-medium ${red ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
         {card.rank}
       </span>
-      <span className={`ml-0.5 text-xs opacity-70 ${isRed ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
+      <span className={`ml-0.5 text-xs opacity-70 ${red ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
         {card.suit}
       </span>
     </div>

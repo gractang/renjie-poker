@@ -1,53 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { fetchHistory } from "../lib/accountData";
+import HistoryRow from "./HistoryRow";
 import SiteFooter from "./SiteFooter";
-
-function formatCategory(category) {
-  return category.replaceAll("-", " ");
-}
-
-function formatDate(value) {
-  if (!value) return "not yet";
-  return new Date(value).toLocaleString();
-}
-
-function HistoryRow({ row }) {
-  const won = row.outcome === "win";
-  const isLoss = !won && !row.dealer_won_tie;
-
-  return (
-    <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="text-sm">
-            {row.player_hand_name}
-            <span className="text-[var(--color-text-muted)]"> vs {row.dealer_hand_name}</span>
-          </div>
-          <div className="mt-1 text-xs text-[var(--color-text-muted)]">
-            {formatDate(row.completed_at)}
-          </div>
-        </div>
-        <div
-          className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
-            won
-              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-              : isLoss
-                ? "border-[var(--color-suit-red)] text-[var(--color-suit-red)]"
-                : "border-[var(--color-border)] text-[var(--color-text-muted)]"
-          }`}
-          style={{ fontFamily: "'DM Mono', monospace" }}
-        >
-          {won ? "win" : row.dealer_won_tie ? "dealer tie" : "loss"}
-        </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--color-text-muted)]">
-        <span>{formatCategory(row.player_hand_category)}</span>
-        <span>&middot;</span>
-        <span>{row.turns_played} turns</span>
-      </div>
-    </div>
-  );
-}
 
 export default function HistoryPage({ onBack, userId }) {
   const [rows, setRows] = useState([]);
@@ -55,29 +9,11 @@ export default function HistoryPage({ onBack, userId }) {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    if (!userId || !supabase) return;
+    if (!userId) return;
     setLoading(true);
     setError("");
     try {
-      const { data, error: fetchError } = await supabase
-        .from("game_sessions")
-        .select(`
-          id,
-          completed_at,
-          outcome,
-          player_hand_name,
-          player_hand_category,
-          dealer_hand_name,
-          dealer_hand_category,
-          dealer_won_tie,
-          turns_played
-        `)
-        .eq("user_id", userId)
-        .eq("status", "completed")
-        .order("completed_at", { ascending: false });
-
-      if (fetchError) throw fetchError;
-      setRows(data ?? []);
+      setRows(await fetchHistory(userId));
     } catch (err) {
       setError(err.message ?? "Could not load history.");
     } finally {

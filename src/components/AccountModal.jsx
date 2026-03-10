@@ -1,26 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
+import HistoryRow from "./HistoryRow";
 import {
   EMPTY_STATS,
   fetchAppConfig,
   fetchAccountSnapshot,
   updateProfileSettings,
 } from "../lib/accountData";
+import { formatCategory, formatPercent } from "../lib/format";
 
 const INPUT_CLASS = "w-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-accent)]";
-
-function formatCategory(category) {
-  return category.replaceAll("-", " ");
-}
-
-function formatPercent(value) {
-  return `${Number(value ?? 0).toFixed(1)}%`;
-}
-
-function formatDate(value) {
-  if (!value) return "not yet";
-  return new Date(value).toLocaleString();
-}
 
 function SectionHeading({ eyebrow, title, children }) {
   return (
@@ -52,44 +41,6 @@ function StatCard({ label, value, detail }) {
       </div>
       <div className="mt-2 truncate text-xl tracking-tight">{value}</div>
       {detail && <div className="mt-1 truncate text-xs text-[var(--color-text-muted)]">{detail}</div>}
-    </div>
-  );
-}
-
-function HistoryRow({ row }) {
-  const won = row.outcome === "win";
-  const isLoss = !won && !row.dealer_won_tie;
-
-  return (
-    <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="text-sm">
-            {row.player_hand_name}
-            <span className="text-[var(--color-text-muted)]"> vs {row.dealer_hand_name}</span>
-          </div>
-          <div className="mt-1 text-xs text-[var(--color-text-muted)]">
-            {formatDate(row.completed_at)}
-          </div>
-        </div>
-        <div
-          className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
-            won
-              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-              : isLoss
-                ? "border-[var(--color-suit-red)] text-[var(--color-suit-red)]"
-                : "border-[var(--color-border)] text-[var(--color-text-muted)]"
-          }`}
-          style={{ fontFamily: "'DM Mono', monospace" }}
-        >
-          {won ? "win" : row.dealer_won_tie ? "dealer tie" : "loss"}
-        </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--color-text-muted)]">
-        <span>{formatCategory(row.player_hand_category)}</span>
-        <span>•</span>
-        <span>{row.turns_played} turns</span>
-      </div>
     </div>
   );
 }
@@ -252,7 +203,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={title} width="780px">
+    <Modal open={open} onClose={onClose} title={title}>
       {!auth.hasSupabaseConfig && (
         <div className="space-y-3 text-sm">
           <SectionHeading eyebrow="Config" title="Supabase keys are still missing">

@@ -1,10 +1,12 @@
 import { cardId } from "./deck";
 import { compareHands, evaluateBestHand } from "./poker-eval";
 
-export const RESULT_TYPE_NO_MATCH = "no-match";
+const STATUS_NO_MATCH = "no-match";
+
+export const RESULT_TYPE_NO_MATCH = STATUS_NO_MATCH;
 export const RESULT_TYPE_MATCH = "match";
 
-export const TURN_STATUS_NO_MATCH = "no-match";
+export const TURN_STATUS_NO_MATCH = STATUS_NO_MATCH;
 export const TURN_STATUS_DEALT = "dealt";
 export const TURN_STATUS_FINISHED = "finished";
 
@@ -29,17 +31,6 @@ export function createGameState(deck) {
     gameOver: false,
     winner: null,
   };
-}
-
-export function topUpDealerPure(dealerArr, remainingArr) {
-  const dealer = [...dealerArr];
-  const remaining = [...remainingArr];
-
-  while (dealer.length < 8 && remaining.length) {
-    dealer.push(remaining.shift());
-  }
-
-  return { dealer, remaining };
 }
 
 export function dealOneTurnPure(remainingArr, selectionIds) {
@@ -164,6 +155,7 @@ export function resolveDealResult(game, result) {
         selection: new Set(),
         gameOver: true,
         winner: showdown.winner,
+        showdown,
       },
     };
   }
@@ -182,11 +174,11 @@ export function resolveDealResult(game, result) {
 }
 
 export function buildCompletedGameSummary(game) {
-  if (!game.gameOver) {
+  if (!game.gameOver || !game.showdown) {
     return null;
   }
 
-  const showdown = evaluateShowdown(game.player, game.dealer);
+  const { showdown } = game;
 
   return {
     localGameId: game.localGameId,
@@ -202,49 +194,5 @@ export function buildCompletedGameSummary(game) {
     playerCardIds: game.player.map(cardId),
     dealerCardIds: game.dealer.map(cardId),
     remainingCardIds: game.remaining.map(cardId),
-  };
-}
-
-export function replaySelections(deck, selectionHistory) {
-  let game = createGameState(deck);
-  const turns = [];
-
-  for (const selectionIds of selectionHistory) {
-    if (game.gameOver || game.player.length >= 5) {
-      break;
-    }
-
-    const nextSelection = selectionIds instanceof Set
-      ? new Set(selectionIds)
-      : new Set(selectionIds ?? []);
-    const turnGame = { ...game, selection: nextSelection };
-    const result = computeDealResult(turnGame);
-
-    if (!result) {
-      break;
-    }
-
-    const resolution = resolveDealResult(turnGame, result);
-
-    turns.push({
-      turnIndex: turns.length + 1,
-      selectionIds: [...nextSelection],
-      result: {
-        type: result.type,
-        playerCardId: result.playerCard ? cardId(result.playerCard) : null,
-        dealerCardIds: result.dealerCards.map(cardId),
-        topUpCardIds: result.topUpCards.map(cardId),
-        isGameOver: Boolean(result.isGameOver),
-      },
-      status: resolution.status,
-    });
-
-    game = resolution.nextGame;
-  }
-
-  return {
-    game,
-    turns,
-    summary: buildCompletedGameSummary(game),
   };
 }

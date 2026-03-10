@@ -335,8 +335,8 @@
   .w-7 {
     width: calc(var(--spacing) * 7);
   }
-  .w-\[min\(640px\,92vw\)\] {
-    width: min(640px, 92vw);
+  .w-\[min\(720px\,92vw\)\] {
+    width: min(720px, 92vw);
   }
   .w-full {
     width: 100%;
