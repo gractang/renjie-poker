@@ -2,6 +2,38 @@ import { useCallback, useEffect, useState } from "react";
 import { ensureProfileForUser } from "../lib/accountData";
 import { hasSupabaseConfig, supabase } from "../lib/supabaseClient";
 
+const AUTH_RELOAD_MARKER_KEY = "renjie:auth-reload-at";
+const AUTH_RELOAD_COOLDOWN_MS = 4000;
+const GAME_STATE_STORAGE_KEYS = [
+  "renjie:game-state",
+  "renjie-poker:game-state",
+  "renjie-poker:active-game",
+  "renjie-game-state",
+];
+
+function clearSavedGameState() {
+  if (typeof window === "undefined") return;
+
+  for (const key of GAME_STATE_STORAGE_KEYS) {
+    window.localStorage.removeItem(key);
+    window.sessionStorage.removeItem(key);
+  }
+}
+
+function shouldReloadAfterAuthTransition() {
+  if (typeof window === "undefined") return false;
+
+  const previous = Number.parseInt(window.sessionStorage.getItem(AUTH_RELOAD_MARKER_KEY) || "", 10);
+  const now = Date.now();
+
+  if (Number.isFinite(previous) && now - previous < AUTH_RELOAD_COOLDOWN_MS) {
+    return false;
+  }
+
+  window.sessionStorage.setItem(AUTH_RELOAD_MARKER_KEY, `${now}`);
+  return true;
+}
+
 export default function useSupabaseAuth() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -55,24 +87,28 @@ export default function useSupabaseAuth() {
 
     loadSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
 
       if (!nextSession?.user) {
         setProfile(null);
-        return;
+      } else {
+        queueMicrotask(async () => {
+          try {
+            await refreshProfile(nextSession.user);
+          } catch (profileError) {
+            if (active) {
+              setError(profileError.message ?? "Could not refresh your profile.");
+            }
+          }
+        });
       }
 
-      queueMicrotask(async () => {
-        try {
-          await refreshProfile(nextSession.user);
-        } catch (profileError) {
-          if (active) {
-            setError(profileError.message ?? "Could not refresh your profile.");
-          }
-        }
-      });
+      if ((event === "SIGNED_IN" || event === "SIGNED_OUT") && shouldReloadAfterAuthTransition()) {
+        clearSavedGameState();
+        window.location.reload();
+      }
     });
 
     return () => {
