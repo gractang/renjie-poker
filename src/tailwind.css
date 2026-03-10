@@ -335,6 +335,9 @@
   .w-7 {
     width: calc(var(--spacing) * 7);
   }
+  .w-\[min\(640px\,92vw\)\] {
+    width: min(640px, 92vw);
+  }
   .w-\[min\(720px\,92vw\)\] {
     width: min(720px, 92vw);
   }
@@ -562,6 +565,12 @@
   }
   .border-\[var\(--color-text\)\] {
     border-color: var(--color-text);
+  }
+  .bg-\[color-mix\(in_srgb\,var\(--color-accent\)_8\%\,var\(--color-surface\)\)\] {
+    background-color: var(--color-accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in srgb,var(--color-accent) 8%,var(--color-surface));
+    }
   }
   .bg-\[color-mix\(in_srgb\,var\(--color-accent\)_10\%\,var\(--color-surface\)\)\] {
     background-color: var(--color-accent);
