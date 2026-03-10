@@ -698,12 +698,12 @@ export default function App() {
       </header>
 
       <main className="flex-1 flex flex-col px-4 md:px-5">
-        {!gameOver && (
+        {(!gameOver || isDealing) && (
           <div className="mb-3 text-xs text-[var(--color-text-muted)] md:mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
             {message}
           </div>
         )}
-        {gameOver && (
+        {gameOver && !isDealing && (
           <WinnerBanner
             winner={winner}
             playerEval={playerEval}
