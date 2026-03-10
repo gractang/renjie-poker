@@ -167,35 +167,42 @@ export async function fetchLeaderboard(limit = 50) {
   return data ?? [];
 }
 
+export async function fetchHistory(userId) {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("game_sessions")
+    .select(`
+      id,
+      completed_at,
+      outcome,
+      player_hand_name,
+      player_hand_category,
+      dealer_hand_name,
+      dealer_hand_category,
+      dealer_won_tie,
+      turns_played
+    `)
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return sortHistoryDescending(data ?? []);
+}
+
 export async function fetchAccountSnapshot(userId) {
   const client = requireSupabase();
-  const [{ data: profile, error: profileError }, { data: historyRows, error: historyError }] =
+  const [{ data: profile, error: profileError }, history] =
     await Promise.all([
       client.from("profiles").select("*").eq("user_id", userId).single(),
-      client
-        .from("game_sessions")
-        .select(`
-          id,
-          completed_at,
-          outcome,
-          player_hand_name,
-          player_hand_category,
-          dealer_hand_name,
-          dealer_hand_category,
-          dealer_won_tie,
-          turns_played
-        `)
-        .eq("user_id", userId)
-        .eq("status", "completed")
-        .order("completed_at", { ascending: false }),
+      fetchHistory(userId),
     ]);
 
   if (profileError) {
     throw profileError;
-  }
-
-  if (historyError) {
-    throw historyError;
   }
 
   let rank = null;
@@ -209,8 +216,6 @@ export async function fetchAccountSnapshot(userId) {
   } catch {
     // rank stays null
   }
-
-  const history = sortHistoryDescending(historyRows ?? []);
 
   return {
     profile,

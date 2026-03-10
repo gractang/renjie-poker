@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchAppConfig, fetchLeaderboard } from "../lib/accountData";
+import { formatPercent } from "../lib/format";
 import SiteFooter from "./SiteFooter";
-
-function formatPercent(value) {
-  return `${Number(value ?? 0).toFixed(1)}%`;
-}
 
 export default function LeaderboardPage({ onBack, standalone }) {
   const [rows, setRows] = useState([]);

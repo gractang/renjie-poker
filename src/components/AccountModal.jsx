@@ -1,26 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
+import HistoryRow from "./HistoryRow";
 import {
   EMPTY_STATS,
   fetchAppConfig,
   fetchAccountSnapshot,
   updateProfileSettings,
 } from "../lib/accountData";
+import { formatCategory, formatPercent } from "../lib/format";
 
 const INPUT_CLASS = "w-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-accent)]";
-
-function formatCategory(category) {
-  return category.replaceAll("-", " ");
-}
-
-function formatPercent(value) {
-  return `${Number(value ?? 0).toFixed(1)}%`;
-}
-
-function formatDate(value) {
-  if (!value) return "not yet";
-  return new Date(value).toLocaleString();
-}
 
 function SectionHeading({ eyebrow, title, children }) {
   return (
@@ -56,49 +45,7 @@ function StatCard({ label, value, detail }) {
   );
 }
 
-function HistoryRow({ row }) {
-  const won = row.outcome === "win";
-  const isLoss = !won && !row.dealer_won_tie;
-
-  return (
-    <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="text-sm">
-            {row.player_hand_name}
-            <span className="text-[var(--color-text-muted)]"> vs {row.dealer_hand_name}</span>
-          </div>
-          <div className="mt-1 text-xs text-[var(--color-text-muted)]">
-            {formatDate(row.completed_at)}
-          </div>
-        </div>
-        <div
-          className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
-            won
-              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-              : isLoss
-                ? "border-[var(--color-suit-red)] text-[var(--color-suit-red)]"
-                : "border-[var(--color-border)] text-[var(--color-text-muted)]"
-          }`}
-          style={{ fontFamily: "'DM Mono', monospace" }}
-        >
-          {won ? "win" : row.dealer_won_tie ? "dealer tie" : "loss"}
-        </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--color-text-muted)]">
-        <span>{formatCategory(row.player_hand_category)}</span>
-        <span>•</span>
-        <span>{row.turns_played} turns</span>
-      </div>
-    </div>
-  );
-}
-
 export default function AccountModal({ open, onClose, auth, refreshToken, syncStatus, onOpenLeaderboard, onOpenHistory }) {
-  const [authMode, setAuthMode] = useState("sign-in");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [localMessage, setLocalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -183,30 +130,6 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
     }
   };
 
-  const handleEmailSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setLocalMessage("");
-
-    try {
-      if (authMode === "sign-up") {
-        const response = await auth.signUpWithPassword({ email, password, displayName });
-        setLocalMessage(
-          response.session
-            ? "Account created and signed in."
-            : "Account created. Check your email if verification is enabled."
-        );
-      } else {
-        await auth.signInWithPassword({ email, password });
-        setLocalMessage("Signed in.");
-      }
-    } catch (error) {
-      setLocalMessage(error.message ?? "Authentication failed.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleProfileSave = async () => {
     if (!auth.user) return;
 
@@ -252,7 +175,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={title} width="780px">
+    <Modal open={open} onClose={onClose} title={title}>
       {!auth.hasSupabaseConfig && (
         <div className="space-y-3 text-sm">
           <SectionHeading eyebrow="Config" title="Supabase keys are still missing">
@@ -274,93 +197,30 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
       {auth.hasSupabaseConfig && !auth.loading && !auth.user && (
         <div className="space-y-6">
           <div className="border border-[var(--color-border)] bg-[var(--color-background)] p-5">
-            <SectionHeading eyebrow="Save Your Run" title="Sign in before your hot streak disappears">
-              <p className="mt-2 max-w-xl text-sm text-[var(--color-text-muted)]">
-                Signed-in players get saved hand history, aggregate stats, and leaderboard eligibility once they reach {leaderboardRequirementLabel}.
-              </p>
-            </SectionHeading>
-            <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="space-y-3">
-                <button
-                  className="btn-theme w-full justify-between border-[var(--color-text)] bg-[var(--color-text)] px-4 py-3 text-[var(--color-background)] hover:border-[var(--color-text)] hover:bg-[var(--color-text)]"
-                  onClick={handleGoogle}
-                  disabled={submitting}
-                >
-                  <span>continue with google</span>
-                  <span className="text-xs opacity-70">&rarr;</span>
-                </button>
-                <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>
-                  <span className="h-px flex-1 bg-[var(--color-border)]" />
-                  <span>or email and password</span>
-                  <span className="h-px flex-1 bg-[var(--color-border)]" />
-                </div>
-                <form className="space-y-3" onSubmit={handleEmailSubmit}>
-                  {authMode === "sign-up" && (
-                    <input
-                      className={INPUT_CLASS}
-                      placeholder="display name"
-                      value={displayName}
-                      onChange={(event) => setDisplayName(event.target.value)}
-                    />
-                  )}
-                  <input
-                    className={INPUT_CLASS}
-                    type="email"
-                    placeholder="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                  />
-                  <input
-                    className={INPUT_CLASS}
-                    type="password"
-                    placeholder="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    minLength={8}
-                  />
-                  <button className="btn-theme w-full justify-between px-4 py-3" disabled={submitting} type="submit">
-                    <span>{authMode === "sign-up" ? "create account" : "sign in"}</span>
-                    <span className="text-xs opacity-70">&rarr;</span>
-                  </button>
-                </form>
-                <div className="text-center text-sm text-[var(--color-text-muted)]">
-                  {authMode === "sign-in" ? (
-                    <>
-                      Don&apos;t have an account?{" "}
-                      <button className="underline text-[var(--color-text)] hover:opacity-80" onClick={() => setAuthMode("sign-up")} type="button">
-                        Create one
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{" "}
-                      <button className="underline text-[var(--color-text)] hover:opacity-80" onClick={() => setAuthMode("sign-in")} type="button">
-                        Sign in
-                      </button>
-                    </>
-                  )}
-                </div>
+            <SectionHeading eyebrow="Save Your Run" title="Sign in before your hot streak disappears" />
+            <div className="mt-5 grid gap-3 md:grid-cols-3 lg:grid-cols-1">
+              <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>history</div>
+                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Completed hands stay attached to your account.</div>
               </div>
-
-              <div className="space-y-4 border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-                <div className="text-sm">What unlocks after sign-in</div>
-                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-1">
-                  <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>history</div>
-                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Completed hands stay attached to your account.</div>
-                  </div>
-                  <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>stats</div>
-                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Win rate and hand frequency update from your saved sessions.</div>
-                  </div>
-                  <div className="border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3">
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>leaderboard</div>
-                    <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt-in unlocks after {leaderboardRequirementLabel}.</div>
-                  </div>
-                </div>
+              <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>stats</div>
+                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Win rate and hand frequency update from your saved sessions.</div>
               </div>
+              <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>leaderboard</div>
+                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt-in unlocks after {leaderboardRequirementLabel}.</div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <button
+                className="btn-theme w-full justify-between border-[var(--color-text)] bg-[var(--color-text)] px-4 py-3 text-[var(--color-background)] hover:border-[var(--color-text)] hover:bg-[var(--color-text)]"
+                onClick={handleGoogle}
+                disabled={submitting}
+              >
+                <span>continue with google</span>
+                <span className="text-xs opacity-70">&rarr;</span>
+              </button>
             </div>
           </div>
 

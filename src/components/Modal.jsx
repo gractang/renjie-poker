@@ -24,7 +24,7 @@ export default function Modal({ open, onClose, title = "Dialog", children }) {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
       <div
-        className="relative z-10 w-[min(640px,92vw)] max-h-[85vh] overflow-auto
+        className="relative z-10 w-[min(720px,92vw)] max-h-[85vh] overflow-auto
                    bg-[var(--color-surface)] text-[var(--color-text)]
                    border border-[var(--color-border)] p-6"
         onClick={(e) => e.stopPropagation()}

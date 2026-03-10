@@ -1,4 +1,4 @@
-import { RANKS, SUITS, SUIT_KEYS } from "../lib/deck";
+import { RANKS, SUITS, SUIT_KEYS, isRedSuit } from "../lib/deck";
 
 export default function SelectionButtons({
   onSelectSuit,
@@ -14,7 +14,7 @@ export default function SelectionButtons({
   const suitButtons = SUIT_KEYS.map((key, index) => ({
     key,
     symbol: SUITS[index],
-    isRed: key === "H" || key === "D"
+    isRed: isRedSuit({ suitKey: key }),
   }));
 
   const rankButtons = RANKS.map(rank => ({

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
 import { saveCompletedGameRecord } from "../lib/accountData";
+import { cardId, isRedSuit } from "../lib/deck";
+import { evaluateBestHand } from "../lib/poker-eval";
 import HandRow from "../components/HandRow";
 import SelectionGrid from "../components/SelectionGrid";
 import SelectionButtons from "../components/SelectionButtons";
@@ -94,7 +94,7 @@ function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
 
   const isFlying = phase === "flying";
   const pos = isFlying ? to : from;
-  const isRed = card.suitKey === "H" || card.suitKey === "D";
+  const red = isRedSuit(card);
 
   return (
     <div
@@ -114,10 +114,10 @@ function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
         pointerEvents: "none",
       }}
     >
-      <span className={`font-medium ${isRed ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
+      <span className={`font-medium ${red ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
         {card.rank}
       </span>
-      <span className={`ml-0.5 text-xs opacity-70 ${isRed ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
+      <span className={`ml-0.5 text-xs opacity-70 ${red ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
         {card.suit}
       </span>
     </div>
@@ -268,11 +268,14 @@ export default function App() {
   const [buttonFlash, setButtonFlash] = useState({});
   const [flyingCards, setFlyingCards] = useState([]);
   const [isDealing, setIsDealing] = useState(false);
+  const [pendingDeal, setPendingDeal] = useState(null);
+  const [landedIds, setLandedIds] = useState(new Set());
 
   const deckRef = useRef(null);
   const playerHandRef = useRef(null);
   const dealerHandRef = useRef(null);
   const commitTimeoutRef = useRef(null);
+  const landingTimeoutsRef = useRef([]);
   const lastSyncedKeyRef = useRef(null);
   const syncingKeyRef = useRef(null);
 
@@ -281,6 +284,8 @@ export default function App() {
       clearTimeout(commitTimeoutRef.current);
       commitTimeoutRef.current = null;
     }
+    for (const t of landingTimeoutsRef.current) clearTimeout(t);
+    landingTimeoutsRef.current = [];
   }, []);
 
   const getCardTarget = useCallback((handEl, slotIndex) => {
@@ -321,6 +326,8 @@ export default function App() {
     clearPendingCommit();
     setFlyingCards([]);
     setIsDealing(false);
+    setPendingDeal(null);
+    setLandedIds(new Set());
     eng.reset();
   }, [clearPendingCommit, eng]);
 
@@ -431,11 +438,27 @@ export default function App() {
     }
 
     setFlyingCards(cards);
+    setPendingDeal(result);
+    setLandedIds(new Set());
+
+    clearPendingCommit();
+
+    const landingTimeouts = cards.map((fc) =>
+      setTimeout(() => {
+        setLandedIds((prev) => {
+          const next = new Set(prev);
+          next.add(cardId(fc.card));
+          return next;
+        });
+      }, fc.delay + fc.duration)
+    );
+    landingTimeoutsRef.current = landingTimeouts;
 
     const lastDelay = cards.length > 0 ? cards[cards.length - 1].delay : 0;
-    clearPendingCommit();
     commitTimeoutRef.current = setTimeout(() => {
       eng.commitDeal(result);
+      setPendingDeal(null);
+      setLandedIds(new Set());
       setFlyingCards([]);
       setIsDealing(false);
       commitTimeoutRef.current = null;
@@ -633,6 +656,21 @@ export default function App() {
     return <HistoryPage onBack={handleCloseRoute} userId={auth.user.id} />;
   }
 
+  const pendingPlayerCards = pendingDeal?.playerCard && landedIds.has(cardId(pendingDeal.playerCard))
+    ? [pendingDeal.playerCard]
+    : [];
+  const pendingDealerCards = pendingDeal
+    ? [...pendingDeal.dealerCards, ...(pendingDeal.topUpCards || [])].filter((c) => landedIds.has(cardId(c)))
+    : [];
+  const displayPlayer = pendingDeal ? [...player, ...pendingPlayerCards] : player;
+  const displayDealer = pendingDeal ? [...dealer, ...pendingDealerCards] : dealer;
+  const displayPlayerEval = pendingDeal
+    ? (displayPlayer.length ? evaluateBestHand(displayPlayer) : null)
+    : playerEval;
+  const displayDealerEval = pendingDeal
+    ? (displayDealer.length ? evaluateBestHand(displayDealer) : null)
+    : dealerEval;
+
   const deckCount = remainingIds.size;
   const visibleDeckCount = Math.max(0, deckCount - flyingCards.length);
   const selectorSummary = `${selection.size} selected`;
@@ -685,12 +723,12 @@ export default function App() {
       </header>
 
       <main className="flex-1 flex flex-col px-4 md:px-5">
-        {!gameOver && (
+        {(!gameOver || isDealing) && (
           <div className="mb-3 text-xs text-[var(--color-text-muted)] md:mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
             {message}
           </div>
         )}
-        {gameOver && (
+        {gameOver && !isDealing && (
           <WinnerBanner
             winner={winner}
             playerEval={playerEval}
@@ -701,13 +739,13 @@ export default function App() {
         <section className="mb-4 flex flex-col items-start gap-3 md:mb-6 md:flex-row md:gap-6">
           <div className="flex-1 min-w-0">
             <HandHeader
-              countLabel={`${player.length}/5 cards`}
-              handName={playerEval?.name}
+              countLabel={`${displayPlayer.length}/5 cards`}
+              handName={displayPlayerEval?.name}
               label="Player"
               resultTag={gameOver ? (winner === "player" ? "winner" : "loser") : null}
             />
             <div ref={playerHandRef}>
-              <HandRow cards={player} highlightBest={player} />
+              <HandRow cards={displayPlayer} highlightBest={displayPlayer} />
             </div>
             {visibleDeckCount > 0 && (
               <div className="mt-3 flex items-start">
@@ -745,13 +783,13 @@ export default function App() {
 
           <div className="flex-1 min-w-0">
             <HandHeader
-              countLabel={`${dealer.length} cards`}
-              handName={dealerEval?.name}
+              countLabel={`${displayDealer.length} cards`}
+              handName={displayDealerEval?.name}
               label="Dealer"
               resultTag={gameOver ? (winner === "dealer" ? "winner" : "loser") : null}
             />
             <div ref={dealerHandRef}>
-              <HandRow cards={dealer} highlightBest={dealerEval?.bestFive || null} wrap />
+              <HandRow cards={displayDealer} highlightBest={displayDealerEval?.bestFive || null} wrap />
             </div>
           </div>
         </section>
@@ -796,7 +834,7 @@ export default function App() {
                     {selectorDeckLabel}
                   </span>
                   <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
-                    {player.length}/5 cards
+                    {displayPlayer.length}/5 cards
                   </span>
                 </div>
               </div>
@@ -868,8 +906,6 @@ export default function App() {
         refreshToken={accountRefreshToken}
         syncStatus={syncStatus}
       />
-      <Analytics />
-      <SpeedInsights />
     </div>
   );
 }
