@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
 import { saveCompletedGameRecord } from "../lib/accountData";
-import { isRedSuit } from "../lib/deck";
+import { cardId, isRedSuit } from "../lib/deck";
+import { evaluateBestHand } from "../lib/poker-eval";
 import HandRow from "../components/HandRow";
 import SelectionGrid from "../components/SelectionGrid";
 import SelectionButtons from "../components/SelectionButtons";
@@ -267,12 +268,14 @@ export default function App() {
   const [buttonFlash, setButtonFlash] = useState({});
   const [flyingCards, setFlyingCards] = useState([]);
   const [isDealing, setIsDealing] = useState(false);
+  const [pendingDeal, setPendingDeal] = useState(null);
+  const [landedIds, setLandedIds] = useState(new Set());
 
   const deckRef = useRef(null);
   const playerHandRef = useRef(null);
   const dealerHandRef = useRef(null);
   const commitTimeoutRef = useRef(null);
-  const cleanupTimeoutRef = useRef(null);
+  const landingTimeoutsRef = useRef([]);
   const lastSyncedKeyRef = useRef(null);
   const syncingKeyRef = useRef(null);
 
@@ -281,10 +284,8 @@ export default function App() {
       clearTimeout(commitTimeoutRef.current);
       commitTimeoutRef.current = null;
     }
-    if (cleanupTimeoutRef.current) {
-      clearTimeout(cleanupTimeoutRef.current);
-      cleanupTimeoutRef.current = null;
-    }
+    for (const t of landingTimeoutsRef.current) clearTimeout(t);
+    landingTimeoutsRef.current = [];
   }, []);
 
   const getCardTarget = useCallback((handEl, slotIndex) => {
@@ -325,6 +326,8 @@ export default function App() {
     clearPendingCommit();
     setFlyingCards([]);
     setIsDealing(false);
+    setPendingDeal(null);
+    setLandedIds(new Set());
     eng.reset();
   }, [clearPendingCommit, eng]);
 
@@ -435,24 +438,31 @@ export default function App() {
     }
 
     setFlyingCards(cards);
-
-    const playerEntry = cards.find((fc) => fc.id.startsWith("p-"));
-    const lastDelay = cards.length > 0 ? cards[cards.length - 1].delay : 0;
-    const commitTime = playerEntry
-      ? playerEntry.delay + CARD_DURATION + 60
-      : lastDelay + CARD_DURATION + 60;
-    const allDoneTime = lastDelay + CARD_DURATION + 60;
+    setPendingDeal(result);
+    setLandedIds(new Set());
 
     clearPendingCommit();
+
+    const landingTimeouts = cards.map((fc) =>
+      setTimeout(() => {
+        setLandedIds((prev) => {
+          const next = new Set(prev);
+          next.add(cardId(fc.card));
+          return next;
+        });
+      }, fc.delay + fc.duration)
+    );
+    landingTimeoutsRef.current = landingTimeouts;
+
+    const lastDelay = cards.length > 0 ? cards[cards.length - 1].delay : 0;
     commitTimeoutRef.current = setTimeout(() => {
       eng.commitDeal(result);
-      commitTimeoutRef.current = null;
-    }, commitTime);
-    cleanupTimeoutRef.current = setTimeout(() => {
+      setPendingDeal(null);
+      setLandedIds(new Set());
       setFlyingCards([]);
       setIsDealing(false);
-      cleanupTimeoutRef.current = null;
-    }, allDoneTime);
+      commitTimeoutRef.current = null;
+    }, lastDelay + CARD_DURATION + 60);
   }, [clearPendingCommit, dealer.length, eng, getCardTarget, isDealing, player.length]);
 
   useEffect(() => clearPendingCommit, [clearPendingCommit]);
@@ -646,6 +656,21 @@ export default function App() {
     return <HistoryPage onBack={handleCloseRoute} userId={auth.user.id} />;
   }
 
+  const pendingPlayerCards = pendingDeal?.playerCard && landedIds.has(cardId(pendingDeal.playerCard))
+    ? [pendingDeal.playerCard]
+    : [];
+  const pendingDealerCards = pendingDeal
+    ? [...pendingDeal.dealerCards, ...(pendingDeal.topUpCards || [])].filter((c) => landedIds.has(cardId(c)))
+    : [];
+  const displayPlayer = pendingDeal ? [...player, ...pendingPlayerCards] : player;
+  const displayDealer = pendingDeal ? [...dealer, ...pendingDealerCards] : dealer;
+  const displayPlayerEval = pendingDeal
+    ? (displayPlayer.length ? evaluateBestHand(displayPlayer) : null)
+    : playerEval;
+  const displayDealerEval = pendingDeal
+    ? (displayDealer.length ? evaluateBestHand(displayDealer) : null)
+    : dealerEval;
+
   const deckCount = remainingIds.size;
   const visibleDeckCount = Math.max(0, deckCount - flyingCards.length);
   const selectorSummary = `${selection.size} selected`;
@@ -714,13 +739,13 @@ export default function App() {
         <section className="mb-4 flex flex-col items-start gap-3 md:mb-6 md:flex-row md:gap-6">
           <div className="flex-1 min-w-0">
             <HandHeader
-              countLabel={`${player.length}/5 cards`}
-              handName={playerEval?.name}
+              countLabel={`${displayPlayer.length}/5 cards`}
+              handName={displayPlayerEval?.name}
               label="Player"
               resultTag={gameOver ? (winner === "player" ? "winner" : "loser") : null}
             />
             <div ref={playerHandRef}>
-              <HandRow cards={player} highlightBest={player} />
+              <HandRow cards={displayPlayer} highlightBest={displayPlayer} />
             </div>
             {visibleDeckCount > 0 && (
               <div className="mt-3 flex items-start">
@@ -758,13 +783,13 @@ export default function App() {
 
           <div className="flex-1 min-w-0">
             <HandHeader
-              countLabel={`${dealer.length} cards`}
-              handName={dealerEval?.name}
+              countLabel={`${displayDealer.length} cards`}
+              handName={displayDealerEval?.name}
               label="Dealer"
               resultTag={gameOver ? (winner === "dealer" ? "winner" : "loser") : null}
             />
             <div ref={dealerHandRef}>
-              <HandRow cards={dealer} highlightBest={dealerEval?.bestFive || null} wrap />
+              <HandRow cards={displayDealer} highlightBest={displayDealerEval?.bestFive || null} wrap />
             </div>
           </div>
         </section>
@@ -809,7 +834,7 @@ export default function App() {
                     {selectorDeckLabel}
                   </span>
                   <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[var(--color-text-muted)]">
-                    {player.length}/5 cards
+                    {displayPlayer.length}/5 cards
                   </span>
                 </div>
               </div>
