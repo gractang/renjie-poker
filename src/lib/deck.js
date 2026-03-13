@@ -29,3 +29,12 @@ export const cardId = (c) => {
 export const isRedSuit = (c) => c.suitKey === "H" || c.suitKey === "D";
 
 export const formatCard = (c) => `${c.rank}${c.suit}`;
+
+export function cardFromId(id) {
+  const rank = id[0];
+  const suitKey = id[1];
+  const rankIndex = RANKS.indexOf(rank);
+  const suitIndex = SUIT_KEYS.indexOf(suitKey);
+  if (rankIndex === -1 || suitIndex === -1) return null;
+  return { rank, suit: SUITS[suitIndex], suitKey, rVal: rankIndex + 2 };
+}

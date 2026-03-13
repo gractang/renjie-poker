@@ -225,12 +225,97 @@ export async function fetchAccountSnapshot(userId) {
   };
 }
 
+async function insertGameTurns(client, sessionId, turnLog) {
+  if (!turnLog.length) return;
+
+  const turnRows = turnLog.map((turn) => ({
+    game_session_id: sessionId,
+    turn_index: turn.turnIndex,
+    selection_ids: turn.selectionIds,
+    dealer_card_ids: turn.result.dealerCardIds,
+    player_card_id: turn.result.playerCardId,
+    top_up_card_ids: turn.result.topUpCardIds,
+  }));
+
+  const { error } = await client.from("game_turns").insert(turnRows);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function saveInProgressGame({ userId, game }) {
+  const client = requireSupabase();
+
+  const payload = {
+    user_id: userId,
+    status: "in_progress",
+    client_version: "web-client-v1",
+    deck_order: game.deckOrderIds,
+    turns_played: game.turnsPlayed,
+    started_at: game.startedAt,
+    player_cards: game.playerCardIds,
+    dealer_cards: game.dealerCardIds,
+    remaining_cards: game.remainingCardIds,
+    metadata: {
+      local_game_id: game.localGameId,
+      source: "client_recorded_v1",
+      turn_log: game.turnLog,
+    },
+  };
+
+  const { data: existing } = await client
+    .from("game_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "in_progress")
+    .limit(1);
+
+  if (existing?.length) {
+    const { error } = await client
+      .from("game_sessions")
+      .update(payload)
+      .eq("id", existing[0].id);
+
+    if (error) throw error;
+
+    return existing[0];
+  }
+
+  const { data, error } = await client
+    .from("game_sessions")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function fetchInProgressGame(userId) {
+  const client = requireSupabase();
+
+  const { data, error } = await client
+    .from("game_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data;
+}
+
 export async function saveCompletedGameRecord({ userId, summary }) {
   const client = requireSupabase();
 
   const { data: existing, error: existingError } = await client
     .from("game_sessions")
-    .select("id")
+    .select("id, status")
     .eq("user_id", userId)
     .contains("metadata", { local_game_id: summary.localGameId })
     .limit(1);
@@ -239,36 +324,52 @@ export async function saveCompletedGameRecord({ userId, summary }) {
     throw existingError;
   }
 
-  if (existing?.length) {
-    return existing[0];
-  }
-
   const completedAt = new Date().toISOString();
+
+  const completedFields = {
+    status: "completed",
+    client_version: "web-client-v1",
+    deck_order: summary.deckOrderIds,
+    turns_played: summary.turnLog.length,
+    started_at: summary.startedAt,
+    completed_at: completedAt,
+    player_cards: summary.playerCardIds,
+    dealer_cards: summary.dealerCardIds,
+    remaining_cards: summary.remainingCardIds,
+    player_hand_category: summary.playerHandCategory,
+    player_hand_name: summary.playerHandName,
+    dealer_hand_category: summary.dealerHandCategory,
+    dealer_hand_name: summary.dealerHandName,
+    outcome: summary.outcome,
+    dealer_won_tie: summary.dealerWonTie,
+    metadata: {
+      local_game_id: summary.localGameId,
+      source: "client_recorded_v1",
+    },
+  };
+
+  if (existing?.length) {
+    if (existing[0].status === "completed") {
+      return existing[0];
+    }
+
+    const { data, error } = await client
+      .from("game_sessions")
+      .update(completedFields)
+      .eq("id", existing[0].id)
+      .select("id")
+      .single();
+
+    if (error) throw error;
+
+    await insertGameTurns(client, data.id, summary.turnLog);
+
+    return data;
+  }
 
   const { data: sessionRow, error: sessionError } = await client
     .from("game_sessions")
-    .insert({
-      user_id: userId,
-      status: "completed",
-      client_version: "web-client-v1",
-      deck_order: summary.deckOrderIds,
-      turns_played: summary.turnLog.length,
-      started_at: summary.startedAt,
-      completed_at: completedAt,
-      player_cards: summary.playerCardIds,
-      dealer_cards: summary.dealerCardIds,
-      remaining_cards: summary.remainingCardIds,
-      player_hand_category: summary.playerHandCategory,
-      player_hand_name: summary.playerHandName,
-      dealer_hand_category: summary.dealerHandCategory,
-      dealer_hand_name: summary.dealerHandName,
-      outcome: summary.outcome,
-      dealer_won_tie: summary.dealerWonTie,
-      metadata: {
-        local_game_id: summary.localGameId,
-        source: "client_recorded_v1",
-      },
-    })
+    .insert({ user_id: userId, ...completedFields })
     .select("id")
     .single();
 
@@ -276,22 +377,7 @@ export async function saveCompletedGameRecord({ userId, summary }) {
     throw sessionError;
   }
 
-  if (summary.turnLog.length > 0) {
-    const turnRows = summary.turnLog.map((turn) => ({
-      game_session_id: sessionRow.id,
-      turn_index: turn.turnIndex,
-      selection_ids: turn.selectionIds,
-      dealer_card_ids: turn.result.dealerCardIds,
-      player_card_id: turn.result.playerCardId,
-      top_up_card_ids: turn.result.topUpCardIds,
-    }));
-
-    const { error: turnError } = await client.from("game_turns").insert(turnRows);
-
-    if (turnError) {
-      throw turnError;
-    }
-  }
+  await insertGameTurns(client, sessionRow.id, summary.turnLog);
 
   return sessionRow;
 }

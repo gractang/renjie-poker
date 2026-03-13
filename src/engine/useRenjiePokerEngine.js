@@ -131,6 +131,14 @@ export default function useRenjiePokerEngine() {
     setGame(createFreshGame());
   }, []);
 
+  const restoreGame = useCallback((restoredState) => {
+    setGame({
+      ...restoredState,
+      selection: new Set(),
+      message: DEALT_MESSAGE,
+    });
+  }, []);
+
   const deal = useCallback(() => {
     setGame(prev => {
       if (prev.gameOver) return prev;
@@ -162,6 +170,10 @@ export default function useRenjiePokerEngine() {
   );
 
   return {
+    localGameId: game.localGameId,
+    startedAt: game.startedAt,
+    deckOrder: game.deckOrder,
+    turnLog: game.turnLog,
     player: game.player,
     dealer: game.dealer,
     remaining: game.remaining,
@@ -174,6 +186,7 @@ export default function useRenjiePokerEngine() {
     dealerEval,
     completedGameSummary,
     reset,
+    restoreGame,
     deal,
     computeFullDeal,
     commitDeal,

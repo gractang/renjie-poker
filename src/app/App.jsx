@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
-import { saveCompletedGameRecord } from "../lib/accountData";
-import { cardId, isRedSuit } from "../lib/deck";
+import { saveCompletedGameRecord, saveInProgressGame, fetchInProgressGame } from "../lib/accountData";
+import { cardId, cardFromId, isRedSuit } from "../lib/deck";
 import { evaluateBestHand } from "../lib/poker-eval";
 import HandRow from "../components/HandRow";
 import SelectionGrid from "../components/SelectionGrid";
@@ -236,6 +236,20 @@ function FullScreenNotice({ title, message, onBack }) {
   );
 }
 
+function reconstructGameState(session) {
+  return {
+    localGameId: session.metadata?.local_game_id,
+    startedAt: session.started_at,
+    deckOrder: session.deck_order.map(cardFromId),
+    turnLog: session.metadata?.turn_log || [],
+    player: (session.player_cards || []).map(cardFromId),
+    dealer: (session.dealer_cards || []).map(cardFromId),
+    remaining: (session.remaining_cards || []).map(cardFromId),
+    gameOver: false,
+    winner: null,
+  };
+}
+
 export default function App() {
   const eng = useRenjiePokerEngine();
   const {
@@ -270,6 +284,8 @@ export default function App() {
   const [isDealing, setIsDealing] = useState(false);
   const [pendingDeal, setPendingDeal] = useState(null);
   const [landedIds, setLandedIds] = useState(new Set());
+  const [inProgressSessionId, setInProgressSessionId] = useState(null);
+  const [restoringGame, setRestoringGame] = useState(false);
 
   const deckRef = useRef(null);
   const playerHandRef = useRef(null);
@@ -278,6 +294,7 @@ export default function App() {
   const landingTimeoutsRef = useRef([]);
   const lastSyncedKeyRef = useRef(null);
   const syncingKeyRef = useRef(null);
+  const lastSavedTurnCountRef = useRef(0);
 
   const clearPendingCommit = useCallback(() => {
     if (commitTimeoutRef.current) {
@@ -322,14 +339,19 @@ export default function App() {
     };
   }, []);
 
+  const hasActiveInProgress = Boolean(auth.user && inProgressSessionId && !gameOver);
+
   const handleReset = useCallback(() => {
+    if (hasActiveInProgress) return;
     clearPendingCommit();
     setFlyingCards([]);
     setIsDealing(false);
     setPendingDeal(null);
     setLandedIds(new Set());
+    setInProgressSessionId(null);
+    lastSavedTurnCountRef.current = 0;
     eng.reset();
-  }, [clearPendingCommit, eng]);
+  }, [clearPendingCommit, eng, hasActiveInProgress]);
 
   const handleCloseRoute = useCallback(() => {
     clearHashRoute();
@@ -501,6 +523,66 @@ export default function App() {
     }
   }, [isDesktop, isDealing, player.length]);
 
+  // Restore in-progress game on mount when signed in
+  useEffect(() => {
+    if (!auth.hasSupabaseConfig || auth.loading) return;
+    if (!auth.user) {
+      setRestoringGame(false);
+      setInProgressSessionId(null);
+      lastSavedTurnCountRef.current = 0;
+      return;
+    }
+
+    let cancelled = false;
+    setRestoringGame(true);
+
+    fetchInProgressGame(auth.user.id)
+      .then((session) => {
+        if (cancelled) return;
+        if (session) {
+          const restoredState = reconstructGameState(session);
+          eng.restoreGame(restoredState);
+          setInProgressSessionId(session.id);
+          lastSavedTurnCountRef.current = session.turns_played;
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setRestoringGame(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.hasSupabaseConfig, auth.loading, auth.user?.id, eng.restoreGame]);
+
+  // Save in-progress game after each deal
+  useEffect(() => {
+    if (!auth.user || !auth.hasSupabaseConfig) return;
+    if (eng.gameOver) return;
+
+    const turnCount = eng.turnLog.length;
+    if (turnCount === 0 || turnCount <= lastSavedTurnCountRef.current) return;
+
+    lastSavedTurnCountRef.current = turnCount;
+
+    saveInProgressGame({
+      userId: auth.user.id,
+      game: {
+        localGameId: eng.localGameId,
+        startedAt: eng.startedAt,
+        deckOrderIds: eng.deckOrder.map(cardId),
+        playerCardIds: eng.player.map(cardId),
+        dealerCardIds: eng.dealer.map(cardId),
+        remainingCardIds: eng.remaining.map(cardId),
+        turnLog: eng.turnLog,
+        turnsPlayed: turnCount,
+      },
+    })
+      .then((result) => setInProgressSessionId(result.id))
+      .catch(() => {});
+  }, [auth.user?.id, auth.hasSupabaseConfig, eng.turnLog.length, eng.gameOver, eng.localGameId, eng.startedAt, eng.deckOrder, eng.player, eng.dealer, eng.remaining, eng.turnLog]);
+
   useEffect(() => {
     if (!completedGameSummary) {
       syncingKeyRef.current = null;
@@ -539,6 +621,7 @@ export default function App() {
 
         lastSyncedKeyRef.current = syncKey;
         syncingKeyRef.current = null;
+        setInProgressSessionId(null);
         setSyncStatus({
           state: "saved",
           message: "Last hand saved to your history.",
@@ -713,8 +796,10 @@ export default function App() {
             {auth.user ? <UserIcon className="h-4 w-4" /> : "log in"}
           </button>
           <button
-            className={`btn-theme ${gameOver ? "cta-glow border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
+            className={`btn-theme ${hasActiveInProgress ? "opacity-40 cursor-not-allowed" : gameOver ? "cta-glow border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
+            disabled={hasActiveInProgress}
             onClick={handleReset}
+            title={hasActiveInProgress ? "Finish your current hand first" : undefined}
             type="button"
           >
             new game
@@ -725,7 +810,7 @@ export default function App() {
       <main className="flex-1 flex flex-col px-4 md:px-5">
         {(!gameOver || isDealing) && (
           <div className="mb-3 text-xs text-[var(--color-text-muted)] md:mb-4" style={{ fontFamily: "'DM Mono', monospace" }}>
-            {message}
+            {restoringGame ? "Resuming your previous hand..." : message}
           </div>
         )}
         {gameOver && !isDealing && (
