@@ -380,6 +380,8 @@ export default function App() {
   const handleAnimatedDeal = useCallback(() => {
     if (isDealing) return;
 
+    setIsSelectorOpen(false);
+
     const result = eng.computeFullDeal();
     if (!result) {
       eng.deal();
