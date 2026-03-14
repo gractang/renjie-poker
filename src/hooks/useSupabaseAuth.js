@@ -39,6 +39,7 @@ export default function useSupabaseAuth() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(hasSupabaseConfig);
   const [error, setError] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
 
   const refreshProfile = useCallback(async (nextUser) => {
     if (!supabase || !nextUser) {
@@ -46,9 +47,10 @@ export default function useSupabaseAuth() {
       return null;
     }
 
-    const nextProfile = await ensureProfileForUser(nextUser);
-    setProfile(nextProfile);
-    return nextProfile;
+    const result = await ensureProfileForUser(nextUser);
+    if (result.isNew) setIsNewUser(true);
+    setProfile(result.profile);
+    return result.profile;
   }, []);
 
   useEffect(() => {
@@ -146,6 +148,8 @@ export default function useSupabaseAuth() {
     }
   }, []);
 
+  const dismissNewUser = useCallback(() => setIsNewUser(false), []);
+
   return {
     hasSupabaseConfig,
     session,
@@ -153,6 +157,8 @@ export default function useSupabaseAuth() {
     profile,
     loading,
     error,
+    isNewUser,
+    dismissNewUser,
     refreshProfile,
     signInWithGoogle,
     signOut,

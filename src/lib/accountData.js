@@ -77,7 +77,7 @@ export async function ensureProfileForUser(user) {
   }
 
   if (existingProfile) {
-    return existingProfile;
+    return { profile: existingProfile, isNew: false };
   }
 
   const payload = {
@@ -103,7 +103,7 @@ export async function ensureProfileForUser(user) {
     throw error;
   }
 
-  return data;
+  return { profile: data, isNew: true };
 }
 
 export async function updateProfileSettings(userId, updates) {

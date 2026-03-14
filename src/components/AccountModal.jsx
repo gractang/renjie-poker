@@ -155,10 +155,6 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
   };
 
   const handleLeaderboardToggle = (checked) => {
-    if (!leaderboardEligible && checked) {
-      return;
-    }
-
     setProfileDraft((prev) => ({
       ...prev,
       leaderboardOptIn: checked,
@@ -209,7 +205,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
               </div>
               <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
                 <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)]" style={{ fontFamily: "'DM Mono', monospace" }}>leaderboard</div>
-                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt-in unlocks after {leaderboardRequirementLabel}.</div>
+                <div className="mt-2 text-sm text-[var(--color-text-muted)]">Opt in anytime. You'll appear after {leaderboardRequirementLabel}.</div>
               </div>
             </div>
             <div className="mt-4">
@@ -290,10 +286,9 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
                   />
                   <input
                     className={INPUT_CLASS}
-                    placeholder={leaderboardEligible ? "leaderboard name" : `leaderboard name unlocks at ${leaderboardRequirementLabel}`}
+                    placeholder="leaderboard name"
                     value={profileDraft.leaderboardName}
                     onChange={(event) => setProfileDraft((prev) => ({ ...prev, leaderboardName: event.target.value }))}
-                    disabled={!leaderboardEligible}
                   />
                   <label className="flex items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm">
                     <span>Show me on the public leaderboard</span>
@@ -301,11 +296,24 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
                       type="checkbox"
                       checked={profileDraft.leaderboardOptIn}
                       onChange={(event) => handleLeaderboardToggle(event.target.checked)}
-                      disabled={!leaderboardEligible}
                     />
                   </label>
+                  {profileDraft.leaderboardOptIn && !profileDraft.leaderboardName.trim() && (
+                    <div className="text-xs text-[var(--color-suit-red)]">A leaderboard name is required to opt in.</div>
+                  )}
                   <div className="flex gap-2">
-                    <button className="btn-theme flex-1 justify-between px-4 py-3" onClick={handleProfileSave} disabled={submitting} type="button">
+                    <button
+                      className={`btn-theme flex-1 justify-between px-4 py-3 ${
+                        profileDraft.displayName !== (auth.profile?.display_name ?? "") ||
+                        profileDraft.leaderboardName !== (auth.profile?.leaderboard_name ?? "") ||
+                        profileDraft.leaderboardOptIn !== Boolean(auth.profile?.leaderboard_opt_in)
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]"
+                          : ""
+                      }`}
+                      onClick={handleProfileSave}
+                      disabled={submitting || (profileDraft.leaderboardOptIn && !profileDraft.leaderboardName.trim())}
+                      type="button"
+                    >
                       <span>save profile</span>
                       <span className="text-xs opacity-70">&rarr;</span>
                     </button>
@@ -322,7 +330,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
                   </div>
                   <div className="flex justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
                     <span className="text-[var(--color-text-muted)]">leaderboard name</span>
-                    <span>{profileDraft.leaderboardName || <span className="text-[var(--color-text-muted)]">{leaderboardEligible ? "not set" : "locked"}</span>}</span>
+                    <span>{profileDraft.leaderboardName || <span className="text-[var(--color-text-muted)]">not set</span>}</span>
                   </div>
                   <div className="flex justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
                     <span className="text-[var(--color-text-muted)]">public leaderboard</span>
@@ -381,9 +389,11 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
               </div>
               <div className="text-sm text-[var(--color-text-muted)]">
                 {leaderboardEligible
-                  ? "You can opt into the leaderboard now."
+                  ? profileDraft.leaderboardOptIn
+                    ? "You're on the public leaderboard."
+                    : "You have enough hands to appear on the leaderboard. Opt in from your profile."
                   : hasLeaderboardConfig
-                    ? `${leaderboardMinHands - stats.completedHands} more completed hands to unlock leaderboard opt-in.`
+                    ? `${leaderboardMinHands - stats.completedHands} more completed hands to appear on the leaderboard.`
                     : "Leaderboard requirement is loading."}
               </div>
             </div>

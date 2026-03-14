@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
-import { saveCompletedGameRecord, saveInProgressGame, fetchInProgressGame } from "../lib/accountData";
+import { saveCompletedGameRecord, saveInProgressGame, fetchInProgressGame, updateProfileSettings, fetchAppConfig } from "../lib/accountData";
 import { cardId, cardFromId, isRedSuit } from "../lib/deck";
 import { evaluateBestHand } from "../lib/poker-eval";
 import HandRow from "../components/HandRow";
@@ -236,6 +236,96 @@ function FullScreenNotice({ title, message, onBack }) {
   );
 }
 
+const ONBOARDING_INPUT_CLASS = "w-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-accent)]";
+
+function LeaderboardOnboardingModal({ open, auth, onClose }) {
+  const [leaderboardName, setLeaderboardName] = useState("");
+  const [optIn, setOptIn] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [minHands, setMinHands] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    fetchAppConfig()
+      .then((config) => setMinHands(config.leaderboardMinHands))
+      .catch(() => {});
+  }, [open]);
+
+  const handleSave = async () => {
+    if (!auth.user) return;
+    setSubmitting(true);
+    try {
+      await updateProfileSettings(auth.user.id, {
+        displayName: auth.profile?.display_name ?? "",
+        leaderboardName,
+        leaderboardOptIn: optIn,
+      });
+      await auth.refreshProfile(auth.user);
+      onClose();
+    } catch {
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const minHandsLabel = typeof minHands === "number" ? `${minHands} completed hands` : "enough completed hands";
+  const hasChanges = leaderboardName.trim() !== "" || optIn;
+  const saveDisabled = submitting || (optIn && !leaderboardName.trim());
+
+  return (
+    <Modal open={open} onClose={onClose} title="Welcome to Renjie Poker">
+      <div className="space-y-5">
+        <div className="text-sm text-[var(--color-text-muted)]">
+          Want to compete on the public leaderboard? Set a name and opt in below.
+          You'll appear on the board once you reach {minHandsLabel}.
+        </div>
+        <div className="grid gap-3">
+          <input
+            className={ONBOARDING_INPUT_CLASS}
+            placeholder="leaderboard name"
+            value={leaderboardName}
+            onChange={(e) => setLeaderboardName(e.target.value)}
+          />
+          <label className="flex items-center justify-between gap-3 border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm">
+            <span>Show me on the public leaderboard</span>
+            <input
+              type="checkbox"
+              checked={optIn}
+              onChange={(e) => setOptIn(e.target.checked)}
+            />
+          </label>
+          {optIn && !leaderboardName.trim() && (
+            <div className="text-xs text-[var(--color-suit-red)]">A leaderboard name is required to opt in.</div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            className={`btn-theme flex-1 justify-between px-4 py-3 ${hasChanges && !saveDisabled ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
+            disabled={saveDisabled}
+            onClick={handleSave}
+            type="button"
+          >
+            <span>{optIn ? "save & opt in" : "save"}</span>
+            <span className="text-xs opacity-70">&rarr;</span>
+          </button>
+          <button
+            className="btn-theme px-4 py-3"
+            disabled={submitting}
+            onClick={onClose}
+            type="button"
+          >
+            skip
+          </button>
+        </div>
+        <div className="text-xs text-[var(--color-text-muted)]">
+          You can change this anytime from your profile.
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function reconstructGameState(session) {
   return {
     localGameId: session.metadata?.local_game_id,
@@ -351,6 +441,9 @@ export default function App() {
     setInProgressSessionId(null);
     lastSavedTurnCountRef.current = 0;
     eng.reset();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   }, [clearPendingCommit, eng, hasActiveInProgress]);
 
   const handleCloseRoute = useCallback(() => {
@@ -677,30 +770,31 @@ export default function App() {
       }
 
       if (["s", "h", "c", "d"].includes(key)) {
-        if (isDealing || gameOver) return;
+        if (isDealing) return;
         const suit = key.toUpperCase();
         flashButton(`suit-${suit}`, () => eng.selectSuit(suit));
         return;
       }
 
       if (["2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k", "a"].includes(key)) {
-        if (isDealing || gameOver) return;
+        if (isDealing) return;
         const rank = key.toUpperCase();
         flashButton(`rank-${rank}`, () => eng.selectRank(rank));
         return;
       }
 
       if (key === "0") {
-        if (isDealing || gameOver) return;
+        if (isDealing) return;
         flashButton("selectAll", () => eng.selectAll());
         return;
       }
       if (key === "x") {
-        if (isDealing || gameOver) return;
+        if (isDealing) return;
         flashButton("clear", () => eng.clearSelection());
         return;
       }
       if (key === "n") {
+        if (hasActiveInProgress) return;
         flashButton("newGame", () => handleReset());
         return;
       }
@@ -711,7 +805,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [selection.size, player.length, showRules, showAccount, route, eng, isDealing, gameOver, handleAnimatedDeal, handleReset]);
+  }, [selection.size, player.length, showRules, showAccount, route, eng, isDealing, hasActiveInProgress, handleAnimatedDeal, handleReset]);
 
   if (route === "leaderboard") {
     return <LeaderboardPage onBack={handleCloseRoute} standalone />;
@@ -994,6 +1088,12 @@ export default function App() {
         open={showAccount}
         refreshToken={accountRefreshToken}
         syncStatus={syncStatus}
+      />
+
+      <LeaderboardOnboardingModal
+        open={auth.isNewUser}
+        auth={auth}
+        onClose={auth.dismissNewUser}
       />
     </div>
   );
