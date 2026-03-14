@@ -228,7 +228,6 @@
 
     <main>
       <h1 class="page-heading">About Renjie Poker</h1>
-      <p class="kicker">Always a work in progress.</p>
 
       <section>
         <h2>The Game</h2>
@@ -250,7 +249,41 @@
 
       <section>
         <h2>The Website</h2>
-        <p>This digital version was built by <strong>Grace Tang</strong>, with a lot of help from Claude 4.6 Opus and Codex 5.4 and with Renjie's blessing.</p>
+        <p>
+          This digital version was built by
+          <a
+            href="https://www.gracejtang.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-link"
+          >
+            <strong>Grace Tang</strong>
+          </a>,
+          with a lot of help from Claude 4.6 Opus and Codex 5.4 and with Renjie's blessing.
+        </p>
+      </section>
+
+      <section style="margin-top: 32px; padding-top: 26px; border-top: 1px solid var(--color-border); text-align: center;">
+        <h2 style="margin-bottom: 14px;">Enjoying Renjie Poker?</h2>
+        <a
+          class="btn"
+          href="https://ko-fi.com/gracetang"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="margin: 0 auto;"
+        >
+          buy me a
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px;">
+            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+            <line x1="6" y1="2" x2="6" y2="4"/>
+            <line x1="10" y1="2" x2="10" y2="4"/>
+            <line x1="14" y1="2" x2="14" y2="4"/>
+          </svg>
+        </a>
+        <p style="margin-top: 14px; color: var(--color-text-muted); font-size: 13px;">
+          I appreciate your support! The tokens don't pay for themselves, you know.
+        </p>
       </section>
 
       <div class="actions">
@@ -258,9 +291,7 @@
       </div>
     </main>
 
-    <footer class="site-footer">
-      game by renjie you · site by grace tang
-    </footer>
+    <div class="site-footer" id="site-footer-root"></div>
 
     <script>
       (() => {
@@ -294,5 +325,6 @@
         updateLabel();
       })();
     </script>
+    <script type="module" src="/src/about-footer.jsx"></script>
   </body>
 </html>

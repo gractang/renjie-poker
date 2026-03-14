@@ -859,7 +859,10 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col max-w-5xl lg:max-w-6xl mx-auto">
       <header className="flex items-start justify-between gap-3 px-4 pt-4 pb-2 md:items-center md:px-5 md:pt-5 md:pb-3">
-        <h1 className="shrink-0 text-base tracking-tight md:text-lg" style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500 }}>
+        <h1
+          className="shrink-0 text-[18px]"
+          style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500, letterSpacing: "-0.01em" }}
+        >
           <a href="/" className="hover:opacity-80 transition-opacity" title="Start a new game">
             renjie poker
           </a>
