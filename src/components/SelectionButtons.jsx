@@ -53,17 +53,17 @@ export default function SelectionButtons({
   return (
     <div className="w-full space-y-3 md:space-y-2">
       {/* Top row: Deal + actions */}
-      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5 md:flex md:flex-wrap md:items-center md:gap-1.5">
         <button
-          className={`btn-theme col-span-2 justify-center md:col-span-1 ${hasSelection && canDeal ? 'cta-glow border-[var(--color-accent)] text-[var(--color-accent)]' : 'opacity-30 cursor-not-allowed'} ${flashClass('deal')}`}
+          className={`btn-theme justify-center ${hasSelection && canDeal ? 'cta-glow border-[var(--color-accent)] text-[var(--color-accent)]' : 'opacity-30 cursor-not-allowed'} ${flashClass('deal')}`}
           onClick={hasSelection && canDeal ? onDeal : undefined}
           disabled={!hasSelection || !canDeal}
         >
           deal
         </button>
         <span className="hidden h-5 w-px bg-[var(--color-border)] md:block" />
-        <button className={`btn-theme ${activeClass('selectAll')} ${flashClass('selectAll')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onSelectAll} disabled={disabled}>all</button>
-        <button className={`btn-theme ${flashClass('clear')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onClearSelection} disabled={disabled}>clear</button>
+        <button className={`btn-theme justify-center ${activeClass('selectAll')} ${flashClass('selectAll')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onSelectAll} disabled={disabled}>all</button>
+        <button className={`btn-theme justify-center ${flashClass('clear')} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`} onClick={disabled ? undefined : onClearSelection} disabled={disabled}>clear</button>
       </div>
 
       {/* Suits + ranks */}

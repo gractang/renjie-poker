@@ -1027,6 +1027,22 @@ export default function App() {
               </span>
             </button>
 
+            <div className="mt-3 md:hidden">
+              <SelectionButtons
+                buttonFlash={buttonFlash}
+                canDeal={player.length < 5 && !selectionDisabled}
+                disabled={selectionDisabled}
+                hasSelection={selection.size > 0}
+                onClearSelection={eng.clearSelection}
+                onDeal={handleAnimatedDeal}
+                onSelectAll={eng.selectAll}
+                onSelectRank={eng.selectRank}
+                onSelectSuit={eng.selectSuit}
+                remaining={eng.remaining}
+                selection={selection}
+              />
+            </div>
+
             <div
               className={[
                 isDesktop || isSelectorOpen ? "block" : "hidden",
@@ -1047,20 +1063,22 @@ export default function App() {
                   Hand complete. Start a new game to select from the deck again.
                 </div>
               )}
-              <SelectionButtons
-                buttonFlash={buttonFlash}
-                canDeal={player.length < 5 && !selectionDisabled}
-                disabled={selectionDisabled}
-                hasSelection={selection.size > 0}
-                onClearSelection={eng.clearSelection}
-                onDeal={handleAnimatedDeal}
-                onSelectAll={eng.selectAll}
-                onSelectRank={eng.selectRank}
-                onSelectSuit={eng.selectSuit}
-                remaining={eng.remaining}
-                selection={selection}
-              />
-              <div className="h-3" />
+              <div className="hidden md:block">
+                <SelectionButtons
+                  buttonFlash={buttonFlash}
+                  canDeal={player.length < 5 && !selectionDisabled}
+                  disabled={selectionDisabled}
+                  hasSelection={selection.size > 0}
+                  onClearSelection={eng.clearSelection}
+                  onDeal={handleAnimatedDeal}
+                  onSelectAll={eng.selectAll}
+                  onSelectRank={eng.selectRank}
+                  onSelectSuit={eng.selectSuit}
+                  remaining={eng.remaining}
+                  selection={selection}
+                />
+                <div className="h-3" />
+              </div>
               <div className={`max-h-[50vh] overflow-y-auto pr-1 transition-opacity md:max-h-[45vh] ${selectionDisabled ? "opacity-60" : ""}`}>
                 <SelectionGrid
                   disabled={selectionDisabled}
