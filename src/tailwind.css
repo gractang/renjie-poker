@@ -241,9 +241,6 @@
   .z-50 {
     z-index: 50;
   }
-  .col-span-2 {
-    grid-column: span 2 / span 2;
-  }
   .mx-auto {
     margin-inline: auto;
   }
@@ -387,6 +384,9 @@
   }
   .grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -981,11 +981,6 @@
       @supports (color: color-mix(in lab, red, red)) {
         background-color: color-mix(in srgb,var(--color-selected) 14%,var(--color-surface));
       }
-    }
-  }
-  .md\:col-span-1 {
-    @media (width >= 48rem) {
-      grid-column: span 1 / span 1;
     }
   }
   .md\:mb-4 {
