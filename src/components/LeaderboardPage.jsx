@@ -55,7 +55,27 @@ export default function LeaderboardPage({ onBack, standalone }) {
       <div className="flex-1 overflow-auto px-5 py-6">
         <div className="mx-auto max-w-2xl space-y-4">
           <div>
-            <h2 className="text-lg tracking-tight">Public top table</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg tracking-tight">Public top table</h2>
+              <div className="group relative inline-flex items-center">
+                <span
+                  className="cursor-help rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                  tabIndex={0}
+                  aria-describedby="leaderboard-beta-tooltip"
+                >
+                  beta
+                </span>
+                <span
+                  id="leaderboard-beta-tooltip"
+                  role="tooltip"
+                  className="pointer-events-none absolute left-full top-1/2 z-10 ml-2 w-max max-w-[260px] -translate-y-1/2 border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[10px] normal-case tracking-normal text-[var(--color-text)] opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                >
+                  leaderboard format is subject to change
+                </span>
+              </div>
+            </div>
             <p className="mt-1 text-sm text-[var(--color-text-muted)]">
               {typeof leaderboardMinHands === "number"
                 ? `Only players who opted in with at least ${leaderboardMinHands} completed hands appear here.`
