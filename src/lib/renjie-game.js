@@ -2,6 +2,7 @@ import { cardId } from "./deck";
 import { compareHands, evaluateBestHand } from "./poker-eval";
 
 const STATUS_NO_MATCH = "no-match";
+const SHOWDOWN_TIE_EPSILON = 1e-9;
 
 export const RESULT_TYPE_NO_MATCH = STATUS_NO_MATCH;
 export const RESULT_TYPE_MATCH = "match";
@@ -101,7 +102,8 @@ export function computeDealResult(game) {
 export function evaluateShowdown(playerCards, dealerCards) {
   const playerEval = evaluateBestHand(playerCards);
   const dealerEval = evaluateBestHand(dealerCards);
-  const compare = compareHands(playerEval, dealerEval);
+  const rawCompare = compareHands(playerEval, dealerEval);
+  const compare = Math.abs(rawCompare) <= SHOWDOWN_TIE_EPSILON ? 0 : rawCompare;
 
   return {
     playerEval,

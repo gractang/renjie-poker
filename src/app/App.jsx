@@ -1055,8 +1055,13 @@ export default function App() {
               ].join(" ")}
               id="selection-panel"
             >
-              <div className="hidden text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-3 md:block" style={{ fontFamily: "'DM Mono', monospace" }}>
-                Select from deck
+              <div className="mb-3 hidden items-center justify-between md:flex" style={{ fontFamily: "'DM Mono', monospace" }}>
+                <div className="text-xs uppercase tracking-widest text-[var(--color-text-muted)]">
+                  Select from deck
+                </div>
+                <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[11px] text-[var(--color-text)]">
+                  {selectorSummary}
+                </span>
               </div>
               {gameOver && (
                 <div
