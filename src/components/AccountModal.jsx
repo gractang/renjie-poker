@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
 import HistoryRow from "./HistoryRow";
 import {
+  clearCompletedHistory,
   EMPTY_STATS,
   fetchAppConfig,
   fetchAccountSnapshot,
@@ -48,6 +49,7 @@ function StatCard({ label, value, detail }) {
 export default function AccountModal({ open, onClose, auth, refreshToken, syncStatus, onOpenLeaderboard, onOpenHistory }) {
   const [localMessage, setLocalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
   const [editingProfile, setEditingProfile] = useState(false);
@@ -168,6 +170,37 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
       leaderboardOptIn: Boolean(auth.profile?.leaderboard_opt_in),
     });
     setEditingProfile(false);
+  };
+
+  const handleClearHistory = async () => {
+    if (!auth.user || !hasLeaderboardConfig || clearingHistory) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure? Clearing your history will remove all of your past hands as well as your leaderboard standing, and you will have to re-qualify by playing ${leaderboardMinHands} hands.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setClearingHistory(true);
+    setLocalMessage("");
+
+    try {
+      const result = await clearCompletedHistory(auth.user.id);
+      if ((result?.clearedCount ?? 0) > 0) {
+        setLocalMessage("History cleared.");
+      } else {
+        setLocalMessage("No completed hands to clear.");
+      }
+      await loadDashboard();
+    } catch (error) {
+      setLocalMessage(error.message ?? "Could not clear history.");
+    } finally {
+      setClearingHistory(false);
+    }
   };
 
   return (
@@ -411,6 +444,16 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
                 <div className="text-sm text-[var(--color-text-muted)]">Finish a few hands and your distribution will appear here.</div>
               )}
             </div>
+            <button
+              className="btn-theme w-full justify-between border-[var(--color-suit-red)] text-[var(--color-suit-red)] hover:border-[var(--color-suit-red)] hover:bg-[color-mix(in_srgb,var(--color-suit-red)_14%,transparent)] hover:text-[var(--color-suit-red)] active:border-[var(--color-suit-red)] active:bg-[color-mix(in_srgb,var(--color-suit-red)_14%,transparent)] active:text-[var(--color-suit-red)] focus-visible:outline-[var(--color-suit-red)] disabled:cursor-not-allowed disabled:opacity-45"
+              onClick={handleClearHistory}
+              type="button"
+              disabled={clearingHistory || dashboardLoading || !hasLeaderboardConfig}
+              title={hasLeaderboardConfig ? "Clear completed hand history" : "Leaderboard requirement is still loading"}
+            >
+              <span>{clearingHistory ? "clearing history..." : "clear history"}</span>
+              <span className="text-xs opacity-70">{clearingHistory ? "..." : "reset"}</span>
+            </button>
           </div>
 
           {(localMessage || auth.error) && (

@@ -193,6 +193,66 @@ export async function fetchHistory(userId) {
   return sortHistoryDescending(data ?? []);
 }
 
+export async function clearCompletedHistory(userId) {
+  const client = requireSupabase();
+
+  const { data: completedRows, error: completedError } = await client
+    .from("game_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "completed");
+
+  if (completedError) {
+    throw completedError;
+  }
+
+  const sessionIds = (completedRows ?? []).map((row) => row.id);
+  if (!sessionIds.length) {
+    return { clearedCount: 0 };
+  }
+
+  const { data: deletedRows, error: deleteError } = await client
+    .from("game_sessions")
+    .delete()
+    .in("id", sessionIds)
+    .select("id");
+
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  const deletedCount = deletedRows?.length ?? 0;
+  if (deletedCount === sessionIds.length) {
+    return { clearedCount: deletedCount };
+  }
+
+  const clearedAt = new Date().toISOString();
+  const { data: updatedRows, error: updateError } = await client
+    .from("game_sessions")
+    .update({
+      status: "abandoned",
+      abandoned_at: clearedAt,
+      completed_at: null,
+      player_hand_category: null,
+      player_hand_name: null,
+      dealer_hand_category: null,
+      dealer_hand_name: null,
+      outcome: null,
+      player_cards: null,
+      dealer_cards: null,
+      remaining_cards: null,
+      metadata: { source: "history_cleared_v1", cleared_at: clearedAt },
+    })
+    .in("id", sessionIds)
+    .select("id");
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return { clearedCount: updatedRows?.length ?? 0 };
+}
+
 export async function fetchAccountSnapshot(userId) {
   const client = requireSupabase();
   const [{ data: profile, error: profileError }, history] =

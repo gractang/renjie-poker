@@ -969,10 +969,27 @@
       }
     }
   }
+  .hover\:border-\[var\(--color-suit-red\)\] {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--color-suit-red);
+      }
+    }
+  }
   .hover\:border-\[var\(--color-text\)\] {
     &:hover {
       @media (hover: hover) {
         border-color: var(--color-text);
+      }
+    }
+  }
+  .hover\:bg-\[color-mix\(in_srgb\,var\(--color-suit-red\)_14\%\,transparent\)\] {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-suit-red);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in srgb,var(--color-suit-red) 14%,transparent);
+        }
       }
     }
   }
@@ -1004,6 +1021,13 @@
       }
     }
   }
+  .hover\:text-\[var\(--color-suit-red\)\] {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-suit-red);
+      }
+    }
+  }
   .hover\:opacity-80 {
     &:hover {
       @media (hover: hover) {
@@ -1016,6 +1040,11 @@
       border-color: var(--color-accent);
     }
   }
+  .focus-visible\:outline-\[var\(--color-suit-red\)\] {
+    &:focus-visible {
+      outline-color: var(--color-suit-red);
+    }
+  }
   .active\:scale-\[0\.98\] {
     &:active {
       scale: 0.98;
@@ -1026,12 +1055,40 @@
       border-color: var(--color-accent);
     }
   }
+  .active\:border-\[var\(--color-suit-red\)\] {
+    &:active {
+      border-color: var(--color-suit-red);
+    }
+  }
   .active\:bg-\[color-mix\(in_srgb\,var\(--color-selected\)_14\%\,var\(--color-surface\)\)\] {
     &:active {
       background-color: var(--color-selected);
       @supports (color: color-mix(in lab, red, red)) {
         background-color: color-mix(in srgb,var(--color-selected) 14%,var(--color-surface));
       }
+    }
+  }
+  .active\:bg-\[color-mix\(in_srgb\,var\(--color-suit-red\)_14\%\,transparent\)\] {
+    &:active {
+      background-color: var(--color-suit-red);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in srgb,var(--color-suit-red) 14%,transparent);
+      }
+    }
+  }
+  .active\:text-\[var\(--color-suit-red\)\] {
+    &:active {
+      color: var(--color-suit-red);
+    }
+  }
+  .disabled\:cursor-not-allowed {
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+  .disabled\:opacity-45 {
+    &:disabled {
+      opacity: 45%;
     }
   }
   .md\:mb-4 {

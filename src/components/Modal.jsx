@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export default function Modal({ open, onClose, title = "Dialog", children }) {
+export default function Modal({ open, onClose, title = "Dialog", children, closeOnBackdrop = false }) {
   const closeBtnRef = useRef(null);
 
   useEffect(() => {
@@ -19,9 +19,11 @@ export default function Modal({ open, onClose, title = "Dialog", children }) {
       aria-modal="true"
       role="dialog"
       aria-labelledby="modal-title"
-      onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={closeOnBackdrop ? onClose : undefined}
+      />
 
       <div
         className="relative z-10 w-[min(720px,92vw)] max-h-[85vh] overflow-auto

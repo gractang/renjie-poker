@@ -1,7 +1,7 @@
 {
   "name": "Renjie Poker",
   "short_name": "Renjie Poker",
-  "description": "Renjie Poker hand trainer and dealer.",
+  "description": "Play Renjie Poker, save your stats, battle on the leaderboard!",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
