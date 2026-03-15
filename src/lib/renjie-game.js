@@ -102,7 +102,17 @@ export function computeDealResult(game) {
 export function evaluateShowdown(playerCards, dealerCards) {
   const playerEval = evaluateBestHand(playerCards);
   const dealerEval = evaluateBestHand(dealerCards);
-  const rawCompare = compareHands(playerEval, dealerEval);
+  let rawCompare = compareHands(playerEval, dealerEval);
+
+  // House rule: same high-card flushes are treated as ties (dealer wins ties).
+  if (
+    playerEval.category === "flush" &&
+    dealerEval.category === "flush" &&
+    playerEval.kickerRanks?.[0] === dealerEval.kickerRanks?.[0]
+  ) {
+    rawCompare = 0;
+  }
+
   const compare = Math.abs(rawCompare) <= SHOWDOWN_TIE_EPSILON ? 0 : rawCompare;
 
   return {
