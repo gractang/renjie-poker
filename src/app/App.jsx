@@ -274,7 +274,7 @@ function LeaderboardOnboardingModal({ open, auth, onClose }) {
   const saveDisabled = submitting || (optIn && !leaderboardName.trim());
 
   return (
-    <Modal open={open} onClose={onClose} title="Welcome to Renjie Poker">
+    <Modal open={open} onClose={onClose} title="Welcome to Pick'em Poker">
       <div className="space-y-5">
         <div className="text-sm text-[var(--color-text-muted)]">
           Want to compete on the public leaderboard? Set a name and opt in below.
@@ -864,7 +864,7 @@ export default function App() {
           style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500, letterSpacing: "-0.01em" }}
         >
           <a href="/" className="hover:opacity-80 transition-opacity" title="Start a new game">
-            renjie poker
+            pick'em poker
           </a>
         </h1>
         <div className="flex shrink-0 items-center gap-1.5 md:gap-2">

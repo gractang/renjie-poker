@@ -16,7 +16,7 @@ export default function SiteFooter({ className = "" }) {
         fontFamily: "'DM Mono', monospace",
       }}
     >
-      game by renjie you · © 2026 grace tang ·{" "}
+      © 2026 grace tang ·{" "}
       <a
         href="/about.html"
         className="text-[var(--color-text-muted)] underline underline-offset-2 hover:text-[var(--color-accent)] transition-colors"

@@ -1,7 +1,7 @@
 {
-  "name": "Renjie Poker",
-  "short_name": "Renjie Poker",
-  "description": "Play Renjie Poker, save your stats, battle on the leaderboard!",
+  "name": "Pick'em Poker",
+  "short_name": "Pick'em",
+  "description": "Play Pick'em Poker, save your stats, battle on the leaderboard!",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

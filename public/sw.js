@@ -1,4 +1,4 @@
-const CACHE_NAME = "renjie-poker-v1";
+const CACHE_NAME = "pickem-poker-v1";
 const APP_SHELL = [
   "/",
   "/index.html",
