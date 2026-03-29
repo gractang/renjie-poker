@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "renjiepoker.com"
+        }
+      ],
+      "destination": "/domain-move.html"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.renjiepoker.com"
+        }
+      ],
+      "destination": "/domain-move.html"
+    }
+  ]
+}
