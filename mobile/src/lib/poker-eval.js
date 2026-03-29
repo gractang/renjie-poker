@@ -1,0 +1,188 @@
+function ranksToLexScore(ranks) {
+  let base = 1e6; let score = 0;
+  for (let i = 0; i < ranks.length; i++) { score += ranks[i] * base; base /= 1e3; }
+  return score;
+}
+
+const RANK_LABELS = {
+  2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8",
+  9: "9", 10: "10", 11: "J", 12: "Q", 13: "K", 14: "A",
+};
+
+function rankLabel(rVal) {
+  return RANK_LABELS[rVal] ?? String(rVal);
+}
+
+function rankPluralLabel(rVal) {
+  return `${rankLabel(rVal)}s`;
+}
+
+export const HAND_CATEGORY_ORDER = [
+  "high-card", "one-pair", "two-pair", "three-of-a-kind",
+  "straight", "flush", "full-house", "four-of-a-kind", "straight-flush",
+];
+
+export function evaluateBestHand(cards) {
+  if (!cards?.length) {
+    return { category: "no-hand", score: -1, name: "No hand", kickerRanks: [], bestFive: [] };
+  }
+  const byRank = [...cards].sort((a,b) => b.rVal - a.rVal);
+  const rankCounts = new Map();
+  const suitBuckets = new Map();
+  for (const c of byRank) {
+    if (!rankCounts.has(c.rVal)) rankCounts.set(c.rVal, []);
+    rankCounts.get(c.rVal).push(c);
+    if (!suitBuckets.has(c.suitKey)) suitBuckets.set(c.suitKey, []);
+    suitBuckets.get(c.suitKey).push(c);
+  }
+
+  function getStraight(sub) {
+    if (sub.length < 5) return null;
+    const uniq = []; const seen = new Set();
+    for (const c of sub.slice().sort((a,b)=>b.rVal-a.rVal)) { if (!seen.has(c.rVal)) { uniq.push(c); seen.add(c.rVal); } }
+    const withWheel = uniq.slice();
+    if (uniq.some(c=>c.rVal===14)) { const ace = uniq.find(c=>c.rVal===14); withWheel.push({ ...ace, rVal: 1, _wheel:true }); }
+    withWheel.sort((a,b)=>b.rVal-a.rVal);
+    let run=[withWheel[0]];
+    for (let i=1;i<withWheel.length;i++) {
+      const prev=withWheel[i-1].rVal, cur=withWheel[i].rVal;
+      if (cur===prev-1) run.push(withWheel[i]);
+      else if (cur!==prev) run=[withWheel[i]];
+      if (run.length>=5) return run.slice(0,5);
+    }
+    return null;
+  }
+
+  // Straight Flush
+  let bestSF=null;
+  for (const [, suited] of suitBuckets) {
+    if (suited.length>=5) {
+      const sf=getStraight(suited);
+      if (sf && (!bestSF || sf[0].rVal>bestSF[0].rVal)) bestSF=sf;
+    }
+  }
+  if (bestSF) {
+    const isWheel = bestSF.some(c => c._wheel);
+    const scoreBase = isWheel ? 5 : bestSF[0].rVal;
+    return {
+      category: "straight-flush", score: 8e9 + scoreBase * 1e6,
+      name: `${rankLabel(scoreBase)} high straight flush`,
+      kickerRanks: bestSF.map(c => c.rVal), bestFive: bestSF,
+    };
+  }
+
+  // Quads
+  const quads=[...rankCounts.entries()].filter(([,arr])=>arr.length>=4).sort((a,b)=>b[0]-a[0]);
+  if (quads.length) {
+    const q=quads[0][0]; const quad=rankCounts.get(q).slice(0,4);
+    const k=byRank.find(c=>c.rVal!==q);
+    if (k) {
+      return {
+        category: "four-of-a-kind", score: 7e9 + q * 1e6 + k.rVal * 1e3,
+        name: `Four ${rankPluralLabel(q)}`, kickerRanks: [q, q, q, q, k.rVal],
+        bestFive: [...quad, k],
+      };
+    }
+    return {
+      category: "four-of-a-kind", score: 7e9 + q * 1e6,
+      name: `Four ${rankPluralLabel(q)}`, kickerRanks: [q, q, q, q], bestFive: quad,
+    };
+  }
+
+  // Full House
+  const trips=[...rankCounts.entries()].filter(([,a])=>a.length>=3).sort((a,b)=>b[0]-a[0]);
+  const pairs=[...rankCounts.entries()].filter(([,a])=>a.length>=2).sort((a,b)=>b[0]-a[0]);
+  if (trips.length) {
+    const t=trips[0][0]; let p=null;
+    for (const [r] of pairs) { if (r!==t) { p=r; break; } }
+    if (!p && trips.length>=2) p=trips[1][0];
+    if (p) {
+      return {
+        category: "full-house", score: 6e9 + t * 1e6 + p * 1e3,
+        name: `${rankPluralLabel(t)} full of ${rankPluralLabel(p)}`,
+        kickerRanks: [t, t, t, p, p],
+        bestFive: [...rankCounts.get(t).slice(0, 3), ...rankCounts.get(p).slice(0, 2)],
+      };
+    }
+  }
+
+  // Flush
+  let bestFlush=null;
+  for (const [, suited] of suitBuckets) {
+    if (suited.length>=5) {
+      const top5=suited.slice().sort((a,b)=>b.rVal-a.rVal).slice(0,5);
+      if (!bestFlush || ranksToLexScore(top5.map(c=>c.rVal))>ranksToLexScore(bestFlush.map(c=>c.rVal))) bestFlush=top5;
+    }
+  }
+  if (bestFlush) {
+    return {
+      category: "flush", score: 5e9 + ranksToLexScore(bestFlush.map(c => c.rVal)),
+      name: `${rankLabel(bestFlush[0].rVal)} high flush`,
+      kickerRanks: bestFlush.map(c => c.rVal), bestFive: bestFlush,
+    };
+  }
+
+  // Straight
+  const st=getStraight(byRank);
+  if (st) {
+    const isWheel = st.some(c => c._wheel);
+    const scoreBase = isWheel ? 5 : st[0].rVal;
+    return {
+      category: "straight", score: 4e9 + scoreBase * 1e6,
+      name: `${rankLabel(scoreBase)} high straight`,
+      kickerRanks: st.map(c => c.rVal), bestFive: st,
+    };
+  }
+
+  // Trips
+  if (trips.length) {
+    const t=trips[0][0]; const tCards=rankCounts.get(t).slice(0,3);
+    const ks=byRank.filter(c=>c.rVal!==t).slice(0,2);
+    return {
+      category: "three-of-a-kind", score: 3e9 + t * 1e6 + ranksToLexScore(ks.map(c => c.rVal)),
+      name: `Three ${rankPluralLabel(t)}`, kickerRanks: [t, t, t, ...ks.map(c => c.rVal)],
+      bestFive: [...tCards, ...ks],
+    };
+  }
+
+  // Two Pair
+  if (pairs.length>=2) {
+    const [p1,p2]=pairs.slice(0,2).map(x=>x[0]).sort((a,b)=>b-a);
+    const k=byRank.find(c=>c.rVal!==p1 && c.rVal!==p2);
+    if (k) {
+      return {
+        category: "two-pair", score: 2e9 + p1 * 1e6 + p2 * 1e4 + k.rVal * 1e2,
+        name: `Two pair, ${rankPluralLabel(p1)} and ${rankPluralLabel(p2)}`,
+        kickerRanks: [p1, p1, p2, p2, k.rVal],
+        bestFive: [...rankCounts.get(p1).slice(0, 2), ...rankCounts.get(p2).slice(0, 2), k],
+      };
+    }
+    return {
+      category: "two-pair", score: 2e9 + p1 * 1e6 + p2 * 1e4,
+      name: `Two pair, ${rankPluralLabel(p1)} and ${rankPluralLabel(p2)}`,
+      kickerRanks: [p1, p1, p2, p2],
+      bestFive: [...rankCounts.get(p1).slice(0, 2), ...rankCounts.get(p2).slice(0, 2)],
+    };
+  }
+
+  // One Pair
+  if (pairs.length===1) {
+    const p=pairs[0][0]; const pCards=rankCounts.get(p).slice(0,2);
+    const ks=byRank.filter(c=>c.rVal!==p).slice(0,3);
+    return {
+      category: "one-pair", score: 1e9 + p * 1e6 + ranksToLexScore(ks.map(c => c.rVal)),
+      name: `Pair of ${rankPluralLabel(p)}`, kickerRanks: [p, p, ...ks.map(c => c.rVal)],
+      bestFive: [...pCards, ...ks],
+    };
+  }
+
+  // High Card
+  const top5=byRank.slice(0,5);
+  return {
+    category: "high-card", score: ranksToLexScore(top5.map(c => c.rVal)),
+    name: `${rankLabel(top5[0].rVal)} high`,
+    kickerRanks: top5.map(c => c.rVal), bestFive: top5,
+  };
+}
+
+export function compareHands(hA, hB) { return hA.score - hB.score; }
