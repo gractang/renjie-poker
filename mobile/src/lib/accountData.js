@@ -121,6 +121,150 @@ export async function fetchHistory(userId) {
   return sortHistoryDescending(data ?? []);
 }
 
+export async function saveInProgressGame({ userId, game }) {
+  const client = requireSupabase();
+
+  const payload = {
+    user_id: userId,
+    status: "in_progress",
+    client_version: "mobile-client-v1",
+    deck_order: game.deckOrderIds,
+    turns_played: game.turnsPlayed,
+    started_at: game.startedAt,
+    player_cards: game.playerCardIds,
+    dealer_cards: game.dealerCardIds,
+    remaining_cards: game.remainingCardIds,
+    metadata: {
+      local_game_id: game.localGameId,
+      source: "client_recorded_v1",
+      turn_log: game.turnLog,
+    },
+  };
+
+  const { data: existing } = await client
+    .from("game_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "in_progress")
+    .limit(1);
+
+  if (existing?.length) {
+    const { error } = await client
+      .from("game_sessions")
+      .update(payload)
+      .eq("id", existing[0].id);
+
+    if (error) throw error;
+
+    return existing[0];
+  }
+
+  const { data, error } = await client
+    .from("game_sessions")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function fetchInProgressGame(userId) {
+  const client = requireSupabase();
+
+  const { data, error } = await client
+    .from("game_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function clearCompletedHistory(userId) {
+  const client = requireSupabase();
+
+  const { data: completedRows, error: completedError } = await client
+    .from("game_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "completed");
+
+  if (completedError) throw completedError;
+
+  const sessionIds = (completedRows ?? []).map((row) => row.id);
+  if (!sessionIds.length) return { clearedCount: 0 };
+
+  const { data: deletedRows, error: deleteError } = await client
+    .from("game_sessions")
+    .delete()
+    .in("id", sessionIds)
+    .select("id");
+
+  if (deleteError) throw deleteError;
+
+  const deletedCount = deletedRows?.length ?? 0;
+  if (deletedCount === sessionIds.length) return { clearedCount: deletedCount };
+
+  const clearedAt = new Date().toISOString();
+  const { data: updatedRows, error: updateError } = await client
+    .from("game_sessions")
+    .update({
+      status: "abandoned",
+      abandoned_at: clearedAt,
+      completed_at: null,
+      player_hand_category: null,
+      player_hand_name: null,
+      dealer_hand_category: null,
+      dealer_hand_name: null,
+      outcome: null,
+      player_cards: null,
+      dealer_cards: null,
+      remaining_cards: null,
+      metadata: { source: "history_cleared_v1", cleared_at: clearedAt },
+    })
+    .in("id", sessionIds)
+    .select("id");
+
+  if (updateError) throw updateError;
+
+  return { clearedCount: updatedRows?.length ?? 0 };
+}
+
+export async function fetchAccountSnapshot(userId) {
+  const client = requireSupabase();
+  const [{ data: profile, error: profileError }, history] =
+    await Promise.all([
+      client.from("profiles").select("*").eq("user_id", userId).single(),
+      fetchHistory(userId),
+    ]);
+
+  if (profileError) throw profileError;
+
+  let rank = null;
+
+  try {
+    const top50 = await fetchLeaderboard(50);
+    const index = top50.findIndex((row) => row.user_id === userId);
+    if (index !== -1) rank = index + 1;
+  } catch {
+    // rank stays null
+  }
+
+  return {
+    profile,
+    history,
+    stats: buildStatsFromHistory(history),
+    rank,
+  };
+}
+
 export async function saveCompletedGameRecord({ userId, summary }) {
   const client = requireSupabase();
   const { data: existing, error: existingError } = await client

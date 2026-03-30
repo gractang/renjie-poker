@@ -10,11 +10,30 @@ import {
 import useRenjiePokerEngine from "../src/engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../src/hooks/useSupabaseAuth";
 import { useTheme } from "../src/hooks/useTheme";
-import { cardId } from "../src/lib/deck";
-import { saveCompletedGameRecord } from "../src/lib/accountData";
+import { cardId, cardFromId } from "../src/lib/deck";
+import { saveCompletedGameRecord, saveInProgressGame, fetchInProgressGame } from "../src/lib/accountData";
 import HandRow from "../src/components/HandRow";
 import SelectionControls from "../src/components/SelectionControls";
 import SelectionGrid from "../src/components/SelectionGrid";
+import RulesModal from "../src/components/RulesModal";
+import AccountModal from "../src/components/AccountModal";
+import LeaderboardOnboardingModal from "../src/components/LeaderboardOnboardingModal";
+
+function ResultTag({ tag, colors }) {
+  if (!tag) return null;
+  const isWinner = tag === "winner";
+  const bgColor = isWinner
+    ? "rgba(45, 122, 79, 0.16)"
+    : "rgba(192, 57, 43, 0.14)";
+  const textColor = isWinner ? colors.winner : colors.loser;
+  const borderColor = isWinner ? colors.winner : colors.loser;
+
+  return (
+    <View style={[styles.resultTag, { backgroundColor: bgColor, borderColor }]}>
+      <Text style={[styles.resultTagText, { color: textColor }]}>{tag}</Text>
+    </View>
+  );
+}
 
 function WinnerBanner({ winner, playerEval, dealerEval, colors }) {
   if (!winner || !playerEval || !dealerEval) return null;
@@ -44,6 +63,20 @@ function WinnerBanner({ winner, playerEval, dealerEval, colors }) {
   );
 }
 
+function reconstructGameState(session) {
+  return {
+    localGameId: session.metadata?.local_game_id,
+    startedAt: session.started_at,
+    deckOrder: session.deck_order.map(cardFromId),
+    turnLog: session.metadata?.turn_log || [],
+    player: (session.player_cards || []).map(cardFromId),
+    dealer: (session.dealer_cards || []).map(cardFromId),
+    remaining: (session.remaining_cards || []).map(cardFromId),
+    gameOver: false,
+    winner: null,
+  };
+}
+
 export default function GameScreen() {
   const eng = useRenjiePokerEngine();
   const auth = useSupabaseAuth();
@@ -54,33 +87,148 @@ export default function GameScreen() {
     winner, playerEval, dealerEval, gameOver, completedGameSummary,
   } = eng;
 
-  const [syncStatus, setSyncStatus] = useState("idle");
+  const [showRules, setShowRules] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [syncStatus, setSyncStatus] = useState({ state: "idle", message: "" });
+  const [accountRefreshToken, setAccountRefreshToken] = useState(0);
+  const [inProgressSessionId, setInProgressSessionId] = useState(null);
+  const [restoringGame, setRestoringGame] = useState(false);
   const lastSyncedKeyRef = useRef(null);
+  const syncingKeyRef = useRef(null);
+  const lastSavedTurnCountRef = useRef(0);
+
+  const hasActiveInProgress = Boolean(auth.user && inProgressSessionId && !gameOver);
 
   const handleDeal = useCallback(() => {
     eng.deal();
   }, [eng]);
 
   const handleNewGame = useCallback(() => {
+    if (hasActiveInProgress) return;
     eng.reset();
-    setSyncStatus("idle");
+    setSyncStatus({ state: "idle", message: "" });
+    setInProgressSessionId(null);
     lastSyncedKeyRef.current = null;
-  }, [eng]);
+    syncingKeyRef.current = null;
+    lastSavedTurnCountRef.current = 0;
+  }, [eng, hasActiveInProgress]);
 
-  // Save completed game
+  // Restore in-progress game on mount when signed in
   useEffect(() => {
-    if (!completedGameSummary || !auth.user || !auth.hasSupabaseConfig) return;
+    if (!auth.hasSupabaseConfig || auth.loading) return;
+    if (!auth.user) {
+      setRestoringGame(false);
+      setInProgressSessionId(null);
+      lastSavedTurnCountRef.current = 0;
+      return;
+    }
+
+    let cancelled = false;
+    setRestoringGame(true);
+
+    fetchInProgressGame(auth.user.id)
+      .then((session) => {
+        if (cancelled) return;
+        if (session) {
+          const restoredState = reconstructGameState(session);
+          eng.restoreGame(restoredState);
+          setInProgressSessionId(session.id);
+          lastSavedTurnCountRef.current = session.turns_played;
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setRestoringGame(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.hasSupabaseConfig, auth.loading, auth.user?.id, eng.restoreGame]);
+
+  // Save in-progress game after each deal
+  useEffect(() => {
+    if (!auth.user || !auth.hasSupabaseConfig) return;
+    if (eng.gameOver) return;
+
+    const turnCount = eng.turnLog.length;
+    if (turnCount === 0 || turnCount <= lastSavedTurnCountRef.current) return;
+
+    lastSavedTurnCountRef.current = turnCount;
+
+    saveInProgressGame({
+      userId: auth.user.id,
+      game: {
+        localGameId: eng.localGameId,
+        startedAt: eng.startedAt,
+        deckOrderIds: eng.deckOrder.map(cardId),
+        playerCardIds: eng.player.map(cardId),
+        dealerCardIds: eng.dealer.map(cardId),
+        remainingCardIds: eng.remaining.map(cardId),
+        turnLog: eng.turnLog,
+        turnsPlayed: turnCount,
+      },
+    })
+      .then((result) => setInProgressSessionId(result.id))
+      .catch(() => {});
+  }, [auth.user?.id, auth.hasSupabaseConfig, eng.turnLog.length, eng.gameOver, eng.localGameId, eng.startedAt, eng.deckOrder, eng.player, eng.dealer, eng.remaining, eng.turnLog]);
+
+  // Save completed game with full sync status
+  useEffect(() => {
+    if (!completedGameSummary) {
+      syncingKeyRef.current = null;
+      setSyncStatus({ state: "idle", message: "" });
+      return;
+    }
+
+    if (!auth.hasSupabaseConfig) return;
+
+    if (!auth.user) {
+      setSyncStatus({
+        state: "guest",
+        message: "Sign in to save this completed hand to your history.",
+      });
+      return;
+    }
 
     const syncKey = `${auth.user.id}:${completedGameSummary.localGameId}`;
-    if (lastSyncedKeyRef.current === syncKey) return;
 
-    lastSyncedKeyRef.current = syncKey;
-    setSyncStatus("syncing");
+    if (lastSyncedKeyRef.current === syncKey || syncingKeyRef.current === syncKey) {
+      return;
+    }
 
-    saveCompletedGameRecord({ userId: auth.user.id, summary: completedGameSummary })
-      .then(() => setSyncStatus("saved"))
-      .catch(() => setSyncStatus("error"));
-  }, [completedGameSummary, auth.user, auth.hasSupabaseConfig]);
+    let cancelled = false;
+    syncingKeyRef.current = syncKey;
+    setSyncStatus({ state: "syncing", message: "Saving completed hand..." });
+
+    saveCompletedGameRecord({
+      userId: auth.user.id,
+      summary: completedGameSummary,
+    })
+      .then(() => {
+        if (cancelled) return;
+        lastSyncedKeyRef.current = syncKey;
+        syncingKeyRef.current = null;
+        setInProgressSessionId(null);
+        setAccountRefreshToken((v) => v + 1);
+        setSyncStatus({
+          state: "saved",
+          message: "Last hand saved to your history.",
+        });
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        syncingKeyRef.current = null;
+        setSyncStatus({
+          state: "error",
+          message: error.message ?? "Could not save completed hand.",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.hasSupabaseConfig, auth.user, completedGameSummary]);
 
   const selectionDisabled = gameOver;
   const canDeal = player.length < 5 && selection.size > 0 && !gameOver;
@@ -96,34 +244,31 @@ export default function GameScreen() {
               {isDark ? "light" : "dark"}
             </Text>
           </TouchableOpacity>
-          {auth.hasSupabaseConfig && !auth.user && (
-            <TouchableOpacity
-              onPress={auth.signInWithGoogle}
-              style={[styles.headerBtn, { borderColor: colors.border }]}
-            >
-              <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>log in</Text>
-            </TouchableOpacity>
-          )}
-          {auth.user && (
-            <TouchableOpacity
-              onPress={auth.signOut}
-              style={[styles.headerBtn, { borderColor: colors.border }]}
-            >
-              <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>sign out</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={() => setShowRules(true)} style={[styles.headerBtn, { borderColor: colors.border }]}>
+            <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setShowAccount(true)}
+            style={[styles.headerBtn, { borderColor: colors.border }]}
+          >
+            <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>
+              {auth.user ? "profile" : "log in"}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleNewGame}
+            disabled={hasActiveInProgress}
             style={[
               styles.headerBtn,
               { borderColor: colors.border },
-              gameOver && { borderColor: colors.accent, backgroundColor: colors.accent },
+              hasActiveInProgress && styles.disabled,
+              !hasActiveInProgress && gameOver && { borderColor: colors.accent, backgroundColor: colors.accent },
             ]}
           >
             <Text style={[
               styles.headerBtnText,
               { color: colors.text },
-              gameOver && { color: colors.background },
+              !hasActiveInProgress && gameOver && { color: colors.background },
             ]}>
               new game
             </Text>
@@ -132,8 +277,10 @@ export default function GameScreen() {
       </View>
 
       <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollInner}>
-        {!gameOver && (
-          <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
+        {(!gameOver) && (
+          <Text style={[styles.message, { color: colors.textMuted }]}>
+            {restoringGame ? "Resuming your previous hand..." : message}
+          </Text>
         )}
 
         {gameOver && (
@@ -148,7 +295,13 @@ export default function GameScreen() {
         <View style={styles.handsContainer}>
           <View style={styles.handSection}>
             <View style={styles.handHeader}>
-              <Text style={[styles.handLabel, { color: colors.textMuted }]}>PLAYER</Text>
+              <View style={styles.handLabelRow}>
+                <Text style={[styles.handLabel, { color: colors.textMuted }]}>PLAYER</Text>
+                <ResultTag
+                  tag={gameOver ? (winner === "player" ? "winner" : "loser") : null}
+                  colors={colors}
+                />
+              </View>
               <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 <Text style={[styles.countText, { color: colors.textMuted }]}>
                   {player.length}/5 CARDS
@@ -165,7 +318,13 @@ export default function GameScreen() {
 
           <View style={styles.handSection}>
             <View style={styles.handHeader}>
-              <Text style={[styles.handLabel, { color: colors.textMuted }]}>DEALER</Text>
+              <View style={styles.handLabelRow}>
+                <Text style={[styles.handLabel, { color: colors.textMuted }]}>DEALER</Text>
+                <ResultTag
+                  tag={gameOver ? (winner === "dealer" ? "winner" : "loser") : null}
+                  colors={colors}
+                />
+              </View>
               <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 <Text style={[styles.countText, { color: colors.textMuted }]}>
                   {dealer.length} CARDS
@@ -201,6 +360,14 @@ export default function GameScreen() {
               </Text>
             </View>
           </View>
+
+          {gameOver && (
+            <View style={[styles.handCompleteNotice, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+              <Text style={[styles.handCompleteText, { color: colors.text }]}>
+                Hand complete. Start a new game to select from the deck again.
+              </Text>
+            </View>
+          )}
 
           <SelectionControls
             remaining={eng.remaining}
@@ -242,12 +409,31 @@ export default function GameScreen() {
           )}
         </View>
 
-        {syncStatus === "saved" && (
-          <Text style={[styles.syncText, { color: colors.textMuted }]}>
-            Hand saved to history.
+        {syncStatus.state !== "idle" && (
+          <Text style={[
+            styles.syncText,
+            { color: syncStatus.state === "error" ? colors.error : colors.textMuted },
+          ]}>
+            {syncStatus.message}
           </Text>
         )}
       </ScrollView>
+
+      <RulesModal visible={showRules} onClose={() => setShowRules(false)} />
+
+      <AccountModal
+        visible={showAccount}
+        onClose={() => setShowAccount(false)}
+        auth={auth}
+        syncStatus={syncStatus}
+        onRefresh={() => setAccountRefreshToken((v) => v + 1)}
+      />
+
+      <LeaderboardOnboardingModal
+        visible={auth.isNewUser}
+        auth={auth}
+        onClose={auth.dismissNewUser}
+      />
     </SafeAreaView>
   );
 }
@@ -340,6 +526,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
+  handLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   handLabel: {
     fontSize: 10,
     fontWeight: "700",
@@ -349,6 +540,19 @@ const styles = StyleSheet.create({
   handName: {
     fontSize: 11,
     marginBottom: 6,
+    fontFamily: "monospace",
+  },
+  resultTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  resultTagText: {
+    fontSize: 9,
+    fontWeight: "600",
+    letterSpacing: 1,
+    textTransform: "uppercase",
     fontFamily: "monospace",
   },
   countBadge: {
@@ -394,6 +598,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 2,
+    fontFamily: "monospace",
+  },
+  handCompleteNotice: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  handCompleteText: {
+    fontSize: 11,
     fontFamily: "monospace",
   },
   dealButton: {
