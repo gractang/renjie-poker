@@ -12,6 +12,14 @@
 
     <script>
       (() => {
+        const oldHosts = new Set(["renjiepoker.com", "www.renjiepoker.com"]);
+        if (!oldHosts.has(window.location.hostname)) return;
+        if (window.location.pathname !== "/" && window.location.pathname !== "/index.html") return;
+        window.location.replace("/domain-move.html");
+      })();
+    </script>
+    <script>
+      (() => {
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         const saved = localStorage.getItem("theme");
         const dark = saved ? saved === "dark" : prefersDark;
