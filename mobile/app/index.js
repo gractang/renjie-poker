@@ -259,9 +259,6 @@ export default function GameScreen() {
             <Text style={[styles.title, { color: colors.text }]}>pick'em poker</Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => setShowRules(true)} style={[styles.headerBtn, { borderColor: colors.border }]}>
-              <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>?</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={handleNewGame}
               disabled={hasActiveInProgress}
@@ -432,6 +429,7 @@ export default function GameScreen() {
           accountDetail={auth.user ? auth.profile?.display_name || auth.user.email : "Save stats and join the leaderboard"}
           onOpenAccount={() => setShowAccount(true)}
           onOpenLeaderboard={() => setShowLeaderboard(true)}
+          onOpenRules={() => setShowRules(true)}
         />
 
         <LeaderboardModal

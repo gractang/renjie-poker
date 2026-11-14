@@ -13,9 +13,11 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 import * as WebBrowser from "expo-web-browser";
+import Constants from "expo-constants";
 import { useTheme } from "../hooks/useTheme";
 
 const PRIVACY_POLICY_URL = "https://www.pickem-poker.com/privacy.html";
+const APP_VERSION = Constants.expoConfig?.version;
 
 const DRAWER_WIDTH = 280;
 const ANIMATION_MS = 220;
@@ -111,6 +113,7 @@ export default function SettingsDrawer({
   accountDetail,
   onOpenAccount,
   onOpenLeaderboard,
+  onOpenRules,
 }) {
   const { colors, isDark, toggle, fourColor, toggleFourColor } = useTheme();
   const [mounted, setMounted] = useState(visible);
@@ -169,7 +172,7 @@ export default function SettingsDrawer({
       >
         <SafeAreaView style={styles.drawerInner}>
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.textMuted }]}>SETTINGS</Text>
+            <Text style={[styles.title, { color: colors.textMuted }]}>MENU</Text>
             <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { borderColor: colors.border }]}>
               <Text style={[styles.closeBtnText, { color: colors.text }]}>close</Text>
             </TouchableOpacity>
@@ -177,6 +180,8 @@ export default function SettingsDrawer({
           <View style={styles.body}>
             <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
             <AccountRow label={accountLabel} detail={accountDetail} onPress={() => closeThen(onOpenAccount)} colors={colors} />
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>GAME</Text>
+            <AccountRow label="How to play" onPress={() => closeThen(onOpenRules)} colors={colors} />
             <AccountRow
               label="Leaderboard"
               detail="Top players by win rate"
@@ -192,12 +197,18 @@ export default function SettingsDrawer({
               onValueChange={toggleFourColor}
               colors={colors}
             />
-            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ABOUT</Text>
-            <AccountRow
-              label="Privacy policy"
+          </View>
+          <View style={styles.footer}>
+            <TouchableOpacity
               onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
-              colors={colors}
-            />
+              accessibilityRole="link"
+              hitSlop={8}
+            >
+              <Text style={[styles.footerText, styles.footerLink, { color: colors.textMuted }]}>Privacy policy</Text>
+            </TouchableOpacity>
+            {APP_VERSION ? (
+              <Text style={[styles.footerText, { color: colors.textMuted }]}>v{APP_VERSION}</Text>
+            ) : null}
           </View>
         </SafeAreaView>
       </Animated.View>
@@ -268,6 +279,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginTop: 20,
     marginBottom: 2,
+  },
+  footer: {
+    marginTop: "auto",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  footerText: {
+    fontSize: 12,
+  },
+  footerLink: {
+    textDecorationLine: "underline",
   },
   segment: {
     flexDirection: "row",
