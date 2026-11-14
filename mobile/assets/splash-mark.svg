@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <defs>
+    <pattern id="lattice" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#2d7a4f" />
+      <path d="M0 0H12M0 0V12" stroke="#5cb87a" stroke-width="1.5" opacity="0.55" />
+    </pattern>
+    <symbol id="spade" viewBox="0 0 100 100">
+      <path d="M50 4C50 4 8 38 8 62c0 16 14 26 29 22 4-1 7-4 9-7-1 9-5 17-11 21h30c-6-4-10-12-11-21 2 3 5 6 9 7 15 4 29-6 29-22C92 38 50 4 50 4z" />
+    </symbol>
+  </defs>
+
+  <g transform="rotate(-12 120 130)">
+    <rect x="58" y="50" width="112" height="156" rx="12" fill="#000" opacity="0.12" transform="translate(3 5)" />
+    <rect x="58" y="50" width="112" height="156" rx="12" fill="#fffdf8" />
+    <rect x="65" y="57" width="98" height="142" rx="7" fill="url(#lattice)" />
+  </g>
+
+  <g transform="rotate(8 120 130)">
+    <rect x="76" y="44" width="112" height="156" rx="12" fill="#000" opacity="0.14" transform="translate(4 6)" />
+    <rect x="76" y="44" width="112" height="156" rx="12" fill="#fffdf8" stroke="#d9d5cd" stroke-width="1.5" />
+    <text x="90" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#1a1611">A</text>
+    <use href="#spade" x="89" y="79" width="16" height="16" fill="#1a1611" />
+    <use href="#spade" x="106" y="92" width="52" height="52" fill="#1a1611" />
+    <g transform="rotate(180 132 122)">
+      <text x="90" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#1a1611">A</text>
+      <use href="#spade" x="89" y="79" width="16" height="16" fill="#1a1611" />
+    </g>
+  </g>
+</svg>

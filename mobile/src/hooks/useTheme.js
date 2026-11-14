@@ -47,6 +47,7 @@ function suitColorFor(suitKey, colors, fourColor) {
 }
 
 const ThemeContext = createContext({
+  ready: false,
   isDark: false,
   colors: lightColors,
   toggle: () => {},
@@ -60,14 +61,16 @@ export function ThemeProvider({ children }) {
   const [isDark, setIsDark] = useState(systemScheme === "dark");
   const [fourColor, setFourColor] = useState(false);
 
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
-    AsyncStorage.getItem(THEME_KEY).then((stored) => {
-      if (stored === "dark") setIsDark(true);
-      else if (stored === "light") setIsDark(false);
-    });
-    AsyncStorage.getItem(FOUR_COLOR_KEY).then((stored) => {
-      setFourColor(stored === "on");
-    });
+    Promise.all([AsyncStorage.getItem(THEME_KEY), AsyncStorage.getItem(FOUR_COLOR_KEY)])
+      .then(([storedTheme, storedFourColor]) => {
+        if (storedTheme === "dark") setIsDark(true);
+        else if (storedTheme === "light") setIsDark(false);
+        setFourColor(storedFourColor === "on");
+      })
+      .finally(() => setReady(true));
   }, []);
 
   const toggle = useCallback(() => {
@@ -93,7 +96,7 @@ export function ThemeProvider({ children }) {
   );
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, toggle, fourColor, toggleFourColor, suitColor }}>
+    <ThemeContext.Provider value={{ ready, isDark, colors, toggle, fourColor, toggleFourColor, suitColor }}>
       {children}
     </ThemeContext.Provider>
   );

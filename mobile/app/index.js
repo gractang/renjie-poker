@@ -19,6 +19,7 @@ import RulesModal from "../src/components/RulesModal";
 import SettingsDrawer from "../src/components/SettingsDrawer";
 import AccountModal from "../src/components/AccountModal";
 import LeaderboardModal from "../src/components/LeaderboardModal";
+import LoadingScreen from "../src/components/LoadingScreen";
 import LeaderboardOnboardingModal from "../src/components/LeaderboardOnboardingModal";
 
 function ResultTag({ tag, colors }) {
@@ -82,7 +83,7 @@ function reconstructGameState(session) {
 export default function GameScreen() {
   const eng = useRenjiePokerEngine();
   const auth = useSupabaseAuth();
-  const { colors } = useTheme();
+  const { colors, ready: themeReady } = useTheme();
 
   const {
     player, dealer, message, selection, remainingIds,
@@ -96,7 +97,7 @@ export default function GameScreen() {
   const [syncStatus, setSyncStatus] = useState({ state: "idle", message: "" });
   const [accountRefreshToken, setAccountRefreshToken] = useState(0);
   const [inProgressSessionId, setInProgressSessionId] = useState(null);
-  const [restoringGame, setRestoringGame] = useState(false);
+  const [restoringGame, setRestoringGame] = useState(auth.hasSupabaseConfig);
   const lastSyncedKeyRef = useRef(null);
   const syncingKeyRef = useRef(null);
   const lastSavedTurnCountRef = useRef(0);
@@ -237,224 +238,229 @@ export default function GameScreen() {
   const selectionDisabled = gameOver;
   const canDeal = player.length < 5 && selection.size > 0 && !gameOver;
   const deckCount = remainingIds.size;
+  const appReady = themeReady && (!auth.hasSupabaseConfig || (!auth.loading && !restoringGame));
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View style={styles.titleRow}>
-          <TouchableOpacity
-            onPress={() => setShowSettings(true)}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Open settings"
-            style={styles.menuBtn}
-          >
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={[styles.menuBar, { backgroundColor: colors.text }]} />
-            ))}
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>pick'em poker</Text>
+    <View style={styles.root}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <View style={styles.titleRow}>
+            <TouchableOpacity
+              onPress={() => setShowSettings(true)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Open settings"
+              style={styles.menuBtn}
+            >
+              {[0, 1, 2].map((i) => (
+                <View key={i} style={[styles.menuBar, { backgroundColor: colors.text }]} />
+              ))}
+            </TouchableOpacity>
+            <Text style={[styles.title, { color: colors.text }]}>pick'em poker</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => setShowRules(true)} style={[styles.headerBtn, { borderColor: colors.border }]}>
+              <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>?</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleNewGame}
+              disabled={hasActiveInProgress}
+              style={[
+                styles.headerBtn,
+                { borderColor: colors.border },
+                hasActiveInProgress && styles.disabled,
+                !hasActiveInProgress && gameOver && { borderColor: colors.accent, backgroundColor: colors.accent },
+              ]}
+            >
+              <Text style={[
+                styles.headerBtnText,
+                { color: colors.text },
+                !hasActiveInProgress && gameOver && { color: colors.background },
+              ]}>
+                new game
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowRules(true)} style={[styles.headerBtn, { borderColor: colors.border }]}>
-            <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>?</Text>
-          </TouchableOpacity>
+
+        <View style={[styles.dealBar, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
           <TouchableOpacity
-            onPress={handleNewGame}
-            disabled={hasActiveInProgress}
+            onPress={handleDeal}
+            disabled={!canDeal}
+            activeOpacity={0.8}
             style={[
-              styles.headerBtn,
-              { borderColor: colors.border },
-              hasActiveInProgress && styles.disabled,
-              !hasActiveInProgress && gameOver && { borderColor: colors.accent, backgroundColor: colors.accent },
+              styles.dealButton,
+              { borderColor: colors.border, backgroundColor: colors.surface },
+              canDeal && { borderColor: colors.accent, backgroundColor: colors.accent },
+              !canDeal && styles.disabled,
             ]}
           >
             <Text style={[
-              styles.headerBtnText,
+              styles.dealButtonText,
               { color: colors.text },
-              !hasActiveInProgress && gameOver && { color: colors.background },
+              canDeal && { color: "#fff" },
             ]}>
-              new game
+              {selection.size > 0 ? `Deal · ${selection.size} selected` : "Deal"}
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      <View style={[styles.dealBar, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
-        <TouchableOpacity
-          onPress={handleDeal}
-          disabled={!canDeal}
-          activeOpacity={0.8}
-          style={[
-            styles.dealButton,
-            { borderColor: colors.border, backgroundColor: colors.surface },
-            canDeal && { borderColor: colors.accent, backgroundColor: colors.accent },
-            !canDeal && styles.disabled,
-          ]}
-        >
-          <Text style={[
-            styles.dealButtonText,
-            { color: colors.text },
-            canDeal && { color: "#fff" },
-          ]}>
-            {selection.size > 0 ? `Deal · ${selection.size} selected` : "Deal"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollInner}>
-        {(!gameOver) && (
-          <Text style={[styles.message, { color: colors.textMuted }]}>
-            {restoringGame ? "Resuming your previous hand..." : message}
-          </Text>
-        )}
-
-        {gameOver && (
-          <WinnerBanner
-            winner={winner}
-            playerEval={playerEval}
-            dealerEval={dealerEval}
-            colors={colors}
-          />
-        )}
-
-        <View style={styles.handsContainer}>
-          <View style={styles.handSection}>
-            <View style={styles.handHeader}>
-              <View style={styles.handLabelRow}>
-                <Text style={[styles.handLabel, { color: colors.textMuted }]}>PLAYER</Text>
-                <ResultTag
-                  tag={gameOver ? (winner === "player" ? "winner" : "loser") : null}
-                  colors={colors}
-                />
-              </View>
-              <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                <Text style={[styles.countText, { color: colors.textMuted }]}>
-                  {player.length}/5 CARDS
-                </Text>
-              </View>
-            </View>
-            {playerEval && (
-              <Text style={[styles.handName, { color: colors.textMuted }]}>
-                hand: {playerEval.name}
-              </Text>
-            )}
-            <HandRow cards={player} />
-          </View>
-
-          <View style={styles.handSection}>
-            <View style={styles.handHeader}>
-              <View style={styles.handLabelRow}>
-                <Text style={[styles.handLabel, { color: colors.textMuted }]}>DEALER</Text>
-                <ResultTag
-                  tag={gameOver ? (winner === "dealer" ? "winner" : "loser") : null}
-                  colors={colors}
-                />
-              </View>
-              <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                <Text style={[styles.countText, { color: colors.textMuted }]}>
-                  {dealer.length} CARDS
-                </Text>
-              </View>
-            </View>
-            {dealerEval && (
-              <Text style={[styles.handName, { color: colors.textMuted }]}>
-                hand: {dealerEval.name}
-              </Text>
-            )}
-            <HandRow
-              cards={dealer}
-              maxSlots={0}
-              highlightIds={dealerEval?.bestFive}
-            />
-          </View>
-        </View>
-
-        <View style={[styles.selectionSection, { borderTopColor: colors.border }]}>
-          <View style={styles.selectionHeader}>
-            <View style={styles.selectionTitle}>
-              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>SELECT FROM DECK</Text>
-              <Text style={[styles.deckCount, { color: colors.text }]}>{deckCount} live</Text>
-            </View>
-            <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-              <Text style={[styles.countText, { color: colors.text }]}>
-                {selection.size} selected
-              </Text>
-            </View>
-          </View>
+        <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollInner}>
+          {(!gameOver) && (
+            <Text style={[styles.message, { color: colors.textMuted }]}>
+              {restoringGame ? "Resuming your previous hand..." : message}
+            </Text>
+          )}
 
           {gameOver && (
-            <View style={[styles.handCompleteNotice, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-              <Text style={[styles.handCompleteText, { color: colors.text }]}>
-                Hand complete. Start a new game to select from the deck again.
-              </Text>
-            </View>
-          )}
-
-          <SelectionControls
-            remaining={eng.remaining}
-            selection={selection}
-            disabled={selectionDisabled}
-            onSelectSuit={eng.selectSuit}
-            onSelectRank={eng.selectRank}
-            onSelectAll={eng.selectAll}
-            onClearSelection={eng.clearSelection}
-          />
-
-          {!gameOver && (
-            <SelectionGrid
-              remainingIds={remainingIds}
-              selection={selection}
-              disabled={selectionDisabled}
-              onToggle={eng.toggleSelect}
+            <WinnerBanner
+              winner={winner}
+              playerEval={playerEval}
+              dealerEval={dealerEval}
+              colors={colors}
             />
           )}
-        </View>
 
-        {syncStatus.state !== "idle" && (
-          <Text style={[
-            styles.syncText,
-            { color: syncStatus.state === "error" ? colors.error : colors.textMuted },
-          ]}>
-            {syncStatus.message}
-          </Text>
-        )}
-      </ScrollView>
+          <View style={styles.handsContainer}>
+            <View style={styles.handSection}>
+              <View style={styles.handHeader}>
+                <View style={styles.handLabelRow}>
+                  <Text style={[styles.handLabel, { color: colors.textMuted }]}>PLAYER</Text>
+                  <ResultTag
+                    tag={gameOver ? (winner === "player" ? "winner" : "loser") : null}
+                    colors={colors}
+                  />
+                </View>
+                <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                  <Text style={[styles.countText, { color: colors.textMuted }]}>
+                    {player.length}/5 CARDS
+                  </Text>
+                </View>
+              </View>
+              {playerEval && (
+                <Text style={[styles.handName, { color: colors.textMuted }]}>
+                  hand: {playerEval.name}
+                </Text>
+              )}
+              <HandRow cards={player} />
+            </View>
 
-      <RulesModal visible={showRules} onClose={() => setShowRules(false)} />
-      <SettingsDrawer
-        visible={showSettings}
-        onClose={() => setShowSettings(false)}
-        accountLabel={auth.user ? "Profile" : "Log in"}
-        accountDetail={auth.user ? auth.profile?.display_name || auth.user.email : "Save stats and join the leaderboard"}
-        onOpenAccount={() => setShowAccount(true)}
-        onOpenLeaderboard={() => setShowLeaderboard(true)}
-      />
+            <View style={styles.handSection}>
+              <View style={styles.handHeader}>
+                <View style={styles.handLabelRow}>
+                  <Text style={[styles.handLabel, { color: colors.textMuted }]}>DEALER</Text>
+                  <ResultTag
+                    tag={gameOver ? (winner === "dealer" ? "winner" : "loser") : null}
+                    colors={colors}
+                  />
+                </View>
+                <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                  <Text style={[styles.countText, { color: colors.textMuted }]}>
+                    {dealer.length} CARDS
+                  </Text>
+                </View>
+              </View>
+              {dealerEval && (
+                <Text style={[styles.handName, { color: colors.textMuted }]}>
+                  hand: {dealerEval.name}
+                </Text>
+              )}
+              <HandRow
+                cards={dealer}
+                maxSlots={0}
+                highlightIds={dealerEval?.bestFive}
+              />
+            </View>
+          </View>
 
-      <LeaderboardModal
-        visible={showLeaderboard}
-        onClose={() => setShowLeaderboard(false)}
-        currentUserId={auth.user?.id}
-      />
+          <View style={[styles.selectionSection, { borderTopColor: colors.border }]}>
+            <View style={styles.selectionHeader}>
+              <View style={styles.selectionTitle}>
+                <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>SELECT FROM DECK</Text>
+                <Text style={[styles.deckCount, { color: colors.text }]}>{deckCount} live</Text>
+              </View>
+              <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                <Text style={[styles.countText, { color: colors.text }]}>
+                  {selection.size} selected
+                </Text>
+              </View>
+            </View>
 
-      <AccountModal
-        visible={showAccount}
-        onClose={() => setShowAccount(false)}
-        auth={auth}
-        syncStatus={syncStatus}
-        onRefresh={() => setAccountRefreshToken((v) => v + 1)}
-      />
+            {gameOver && (
+              <View style={[styles.handCompleteNotice, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                <Text style={[styles.handCompleteText, { color: colors.text }]}>
+                  Hand complete. Start a new game to select from the deck again.
+                </Text>
+              </View>
+            )}
 
-      <LeaderboardOnboardingModal
-        visible={auth.isNewUser}
-        auth={auth}
-        onClose={auth.dismissNewUser}
-      />
-    </SafeAreaView>
+            <SelectionControls
+              remaining={eng.remaining}
+              selection={selection}
+              disabled={selectionDisabled}
+              onSelectSuit={eng.selectSuit}
+              onSelectRank={eng.selectRank}
+              onSelectAll={eng.selectAll}
+              onClearSelection={eng.clearSelection}
+            />
+
+            {!gameOver && (
+              <SelectionGrid
+                remainingIds={remainingIds}
+                selection={selection}
+                disabled={selectionDisabled}
+                onToggle={eng.toggleSelect}
+              />
+            )}
+          </View>
+
+          {syncStatus.state !== "idle" && (
+            <Text style={[
+              styles.syncText,
+              { color: syncStatus.state === "error" ? colors.error : colors.textMuted },
+            ]}>
+              {syncStatus.message}
+            </Text>
+          )}
+        </ScrollView>
+
+        <RulesModal visible={showRules} onClose={() => setShowRules(false)} />
+        <SettingsDrawer
+          visible={showSettings}
+          onClose={() => setShowSettings(false)}
+          accountLabel={auth.user ? "Profile" : "Log in"}
+          accountDetail={auth.user ? auth.profile?.display_name || auth.user.email : "Save stats and join the leaderboard"}
+          onOpenAccount={() => setShowAccount(true)}
+          onOpenLeaderboard={() => setShowLeaderboard(true)}
+        />
+
+        <LeaderboardModal
+          visible={showLeaderboard}
+          onClose={() => setShowLeaderboard(false)}
+          currentUserId={auth.user?.id}
+        />
+
+        <AccountModal
+          visible={showAccount}
+          onClose={() => setShowAccount(false)}
+          auth={auth}
+          syncStatus={syncStatus}
+          onRefresh={() => setAccountRefreshToken((v) => v + 1)}
+        />
+
+        <LeaderboardOnboardingModal
+          visible={auth.isNewUser}
+          auth={auth}
+          onClose={auth.dismissNewUser}
+        />
+      </SafeAreaView>
+      <LoadingScreen ready={appReady} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   safeArea: {
     flex: 1,
   },
