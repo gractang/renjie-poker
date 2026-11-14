@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
+import GoogleSignInButton from "./GoogleSignInButton";
 import {
   clearCompletedHistory,
   deleteAccount,
@@ -340,13 +341,12 @@ export default function AccountModal({ visible, onClose, auth, syncStatus, onRef
                   />
                 )}
 
-                <TouchableOpacity
+                <GoogleSignInButton
                   onPress={handleGoogle}
                   disabled={submitting}
-                  style={[styles.googleBtn, { backgroundColor: colors.text }]}
-                >
-                  <Text style={[styles.googleBtnText, { color: colors.background }]}>continue with google</Text>
-                </TouchableOpacity>
+                  dark={!isDark}
+                  style={styles.googleBtn}
+                />
               </View>
 
               {(localMessage || auth.error) ? (
@@ -630,8 +630,7 @@ const styles = StyleSheet.create({
   featureLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 2, fontFamily: "monospace" },
   featureDesc: { fontSize: 13, marginTop: 4, lineHeight: 18 },
   appleBtn: { marginTop: 12, height: 48, width: "100%" },
-  googleBtn: { marginTop: 12, paddingVertical: 14, borderRadius: 8, alignItems: "center" },
-  googleBtnText: { fontSize: 14, fontWeight: "600" },
+  googleBtn: { marginTop: 12 },
 
   // Signed in
   signedInContainer: { gap: 16 },
