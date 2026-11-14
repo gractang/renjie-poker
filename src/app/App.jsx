@@ -2,12 +2,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import useRenjiePokerEngine from "../engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../hooks/useSupabaseAuth";
 import { saveCompletedGameRecord, saveInProgressGame, fetchInProgressGame, updateProfileSettings, fetchAppConfig } from "../lib/accountData";
-import { cardId, cardFromId, isRedSuit } from "../lib/deck";
+import { cardId, cardFromId, suitTextClass } from "../lib/deck";
 import { evaluateBestHand } from "../lib/poker-eval";
 import HandRow from "../components/HandRow";
 import SelectionGrid from "../components/SelectionGrid";
 import SelectionButtons from "../components/SelectionButtons";
-import ThemeToggle from "../components/ThemeToggle";
+import SettingsDrawer from "../components/SettingsDrawer";
 import Modal from "../components/Modal";
 import RulesContent from "../components/RulesContent";
 import AccountModal from "../components/AccountModal";
@@ -59,24 +59,6 @@ function TrophyIcon({ className = "" }) {
   );
 }
 
-function UserIcon({ className = "" }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.8"
-      viewBox="0 0 24 24"
-    >
-      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
-      <path d="M4 20a8 8 0 0 1 16 0" />
-    </svg>
-  );
-}
-
 function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
   const [phase, setPhase] = useState("hidden");
 
@@ -94,7 +76,7 @@ function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
 
   const isFlying = phase === "flying";
   const pos = isFlying ? to : from;
-  const red = isRedSuit(card);
+  const suitClass = suitTextClass(card.suitKey);
 
   return (
     <div
@@ -114,10 +96,10 @@ function FlyingCard({ card, from, to, delay, duration, highlight = false }) {
         pointerEvents: "none",
       }}
     >
-      <span className={`font-medium ${red ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
+      <span className={`font-medium ${suitClass}`}>
         {card.rank}
       </span>
-      <span className={`ml-0.5 text-xs opacity-70 ${red ? "text-[var(--color-suit-red)]" : "text-[var(--color-suit-black)]"}`}>
+      <span className={`ml-0.5 text-xs opacity-70 ${suitClass}`}>
         {card.suit}
       </span>
     </div>
@@ -358,6 +340,7 @@ export default function App() {
 
   const [showRules, setShowRules] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [route, setRoute] = useState(() => getHashRoute());
   const [accountRefreshToken, setAccountRefreshToken] = useState(0);
   const [syncStatus, setSyncStatus] = useState({ state: "idle", message: "" });
@@ -745,6 +728,7 @@ export default function App() {
       if (
         showRules ||
         showAccount ||
+        showSettings ||
         route ||
         event.target.tagName === "INPUT" ||
         event.target.tagName === "TEXTAREA"
@@ -805,7 +789,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [selection.size, player.length, showRules, showAccount, route, eng, isDealing, hasActiveInProgress, handleAnimatedDeal, handleReset]);
+  }, [selection.size, player.length, showRules, showAccount, showSettings, route, eng, isDealing, hasActiveInProgress, handleAnimatedDeal, handleReset]);
 
   if (route === "leaderboard") {
     return <LeaderboardPage onBack={handleCloseRoute} standalone />;
@@ -859,6 +843,18 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col max-w-5xl lg:max-w-6xl mx-auto">
       <header className="flex items-start justify-between gap-3 px-4 pt-4 pb-2 md:items-center md:px-5 md:pt-5 md:pb-3">
+        <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowSettings(true)}
+          className="-ml-2 flex h-11 w-11 flex-col items-center justify-center gap-1 text-[var(--color-text)] hover:opacity-70 md:h-9 md:w-9"
+          aria-label="Open settings"
+          title="Settings"
+        >
+          <span className="block h-0.5 w-5 rounded bg-current" />
+          <span className="block h-0.5 w-5 rounded bg-current" />
+          <span className="block h-0.5 w-5 rounded bg-current" />
+        </button>
         <h1
           className="shrink-0 text-[18px]"
           style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500, letterSpacing: "-0.01em" }}
@@ -867,8 +863,8 @@ export default function App() {
             pick'em poker
           </a>
         </h1>
+        </div>
         <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
-          <ThemeToggle />
           <button
             className={`btn-theme topbar-icon-btn ${buttonFlash.help ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
             onClick={() => setShowRules(true)}
@@ -886,14 +882,6 @@ export default function App() {
           >
             <TrophyIcon className="h-4 w-4" />
           </a>
-          <button
-            className={auth.user ? "btn-theme topbar-icon-btn" : "btn-theme"}
-            onClick={() => setShowAccount(true)}
-            title={auth.user ? "Profile" : "Log in"}
-            type="button"
-          >
-            {auth.user ? <UserIcon className="h-4 w-4" /> : "log in"}
-          </button>
           <button
             className={`btn-theme ${hasActiveInProgress ? "opacity-40 cursor-not-allowed" : gameOver ? "cta-glow border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-background)]" : buttonFlash.newGame ? "bg-[var(--color-accent)] text-[var(--color-background)]" : ""}`}
             disabled={hasActiveInProgress}
@@ -1101,6 +1089,14 @@ export default function App() {
       </main>
 
       <SiteFooter className="pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-5" />
+
+      <SettingsDrawer
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        accountLabel={auth.user ? "Profile" : "Log in"}
+        accountDetail={auth.user ? auth.profile?.display_name || auth.user.email : "Save stats and join the leaderboard"}
+        onOpenAccount={() => setShowAccount(true)}
+      />
 
       <Modal open={showRules} onClose={() => setShowRules(false)} title="How to Play">
         <RulesContent />

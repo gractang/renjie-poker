@@ -1,7 +1,6 @@
-import { formatCard, isRedSuit } from "../lib/deck";
+import { formatCard, suitTextClass } from "../lib/deck";
 
 export default function CardButton({ card, disabled = false, selected = false, onToggle }) {
-  const isRed = isRedSuit(card);
 
   return (
     <button
@@ -19,15 +18,7 @@ export default function CardButton({ card, disabled = false, selected = false, o
       title={formatCard(card)}
       style={{ fontFamily: "'DM Mono', monospace" }}
     >
-      <span className={
-        selected
-          ? isRed
-            ? "text-[var(--color-suit-red)]"
-            : "text-[var(--color-selected)]"
-          : isRed
-            ? "text-[var(--color-suit-red)]"
-            : "text-[var(--color-suit-black)]"
-      }>
+      <span className={selected && card.suitKey === "S" ? "text-[var(--color-selected)]" : suitTextClass(card.suitKey)}>
         <span className="text-sm font-medium md:text-base">{card.rank}</span>
         <span className="ml-0.5 text-xs md:text-sm">{card.suit}</span>
       </span>

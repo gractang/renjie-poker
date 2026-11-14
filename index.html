@@ -24,6 +24,7 @@
         const saved = localStorage.getItem("theme");
         const dark = saved ? saved === "dark" : prefersDark;
         document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.classList.toggle("four-color", localStorage.getItem("four-color") === "on");
       })();
     </script>
   </head>

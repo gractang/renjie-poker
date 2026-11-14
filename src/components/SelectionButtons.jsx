@@ -1,5 +1,7 @@
 import { useMemo } from "react";
-import { RANKS, SUITS, SUIT_KEYS, isRedSuit, cardId } from "../lib/deck";
+import { RANKS, SUITS, SUIT_KEYS, suitTextClass, cardId } from "../lib/deck";
+
+const GRID_BUTTON = "btn-theme h-11 px-0 text-base md:h-9 md:w-9 md:text-sm";
 
 export default function SelectionButtons({
   onSelectSuit,
@@ -17,13 +19,11 @@ export default function SelectionButtons({
   const suitButtons = SUIT_KEYS.map((key, index) => ({
     key,
     symbol: SUITS[index],
-    isRed: isRedSuit({ suitKey: key }),
   }));
 
   const rankButtons = RANKS.map(rank => ({
     key: rank,
     symbol: rank,
-    isRed: false
   }));
 
   const activeButtons = useMemo(() => {
@@ -72,11 +72,11 @@ export default function SelectionButtons({
           <div className="px-0.5 text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-muted)] md:hidden" style={{ fontFamily: "'DM Mono', monospace" }}>
             Suits
           </div>
-          <div className="grid grid-cols-4 gap-1.5 md:flex md:flex-wrap md:items-center md:gap-1">
+          <div className="grid grid-cols-7 gap-1.5 md:flex md:flex-wrap md:items-center md:gap-1">
             {suitButtons.map(b => (
               <button
                 key={b.key}
-                className={`btn-theme justify-center ${b.isRed && !activeButtons[`suit-${b.key}`] ? 'text-[var(--color-suit-red)]' : ''} ${activeClass(`suit-${b.key}`)} ${flashClass(`suit-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`${GRID_BUTTON} ${activeButtons[`suit-${b.key}`] ? '' : suitTextClass(b.key)} ${activeClass(`suit-${b.key}`)} ${flashClass(`suit-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 onClick={disabled ? undefined : () => onSelectSuit(b.key)}
                 disabled={disabled}
               >
@@ -96,7 +96,7 @@ export default function SelectionButtons({
             {rankButtons.map(b => (
               <button
                 key={b.key}
-                className={`btn-theme justify-center ${activeClass(`rank-${b.key}`)} ${flashClass(`rank-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`${GRID_BUTTON} ${activeClass(`rank-${b.key}`)} ${flashClass(`rank-${b.key}`)} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 onClick={disabled ? undefined : () => onSelectRank(b.key)}
                 disabled={disabled}
               >

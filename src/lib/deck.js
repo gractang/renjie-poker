@@ -26,7 +26,14 @@ export const cardId = (c) => {
   return `${c.rank}${c.suitKey}`;
 };
 
-export const isRedSuit = (c) => c.suitKey === "H" || c.suitKey === "D";
+// Literal class names so Tailwind can find them. Colors come from --suit-* vars, which four-color mode overrides.
+const SUIT_TEXT_CLASSES = {
+  S: "text-[var(--suit-S)]",
+  H: "text-[var(--suit-H)]",
+  C: "text-[var(--suit-C)]",
+  D: "text-[var(--suit-D)]",
+};
+export const suitTextClass = (suitKey) => SUIT_TEXT_CLASSES[suitKey];
 
 export const formatCard = (c) => `${c.rank}${c.suit}`;
 

@@ -18,6 +18,12 @@
     --cta-glow-glint: #2f7152;
     --color-suit-red:    #b5342a;
     --color-suit-black:  #2c2418;
+    --color-suit-blue:   #2563b8;
+    --color-suit-green:  #1f8a45;
+    --suit-S: var(--color-suit-black);
+    --suit-H: var(--color-suit-red);
+    --suit-C: var(--color-suit-black);
+    --suit-D: var(--color-suit-red);
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -37,6 +43,13 @@
     --cta-glow-glint: #d7f0e2;
     --color-suit-red:    #e07060;
     --color-suit-black:  #e8e2d6;
+    --color-suit-blue:   #6aa5f2;
+    --color-suit-green:  #5cc77e;
+  }
+
+  .four-color {
+    --suit-C: var(--color-suit-green);
+    --suit-D: var(--color-suit-blue);
   }
 
   html, body {

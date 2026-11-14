@@ -1,4 +1,4 @@
-import { cardId, isRedSuit } from "../lib/deck";
+import { cardId, suitTextClass } from "../lib/deck";
 
 export default function HandRow({ cards, highlightBest = null, wrap = false }) {
   const bestIds = new Set((highlightBest || []).map(cardId));
@@ -16,9 +16,7 @@ export default function HandRow({ cards, highlightBest = null, wrap = false }) {
             data-hand-card
             className={[
               "card-display-theme text-sm",
-              isRedSuit(c)
-                ? "text-[var(--color-suit-red)]"
-                : "text-[var(--color-suit-black)]",
+              suitTextClass(c.suitKey),
               bestIds.has(cardId(c))
                 ? "ring-2 ring-[var(--color-selected)]"
                 : "",
