@@ -4,14 +4,17 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import * as WebBrowser from "expo-web-browser";
 import { useTheme } from "../hooks/useTheme";
+
+const PRIVACY_POLICY_URL = "https://www.pickem-poker.com/privacy.html";
 
 const DRAWER_WIDTH = 280;
 const ANIMATION_MS = 220;
@@ -98,6 +101,8 @@ export default function SettingsDrawer({ visible, onClose, accountLabel, account
       onRequestClose={onClose}
       onDismiss={runAfterClose}
     >
+      {/* A Modal renders outside the app's provider, so it needs its own to get safe-area insets. */}
+      <SafeAreaProvider>
       <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: progress }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close settings" />
       </Animated.View>
@@ -126,9 +131,16 @@ export default function SettingsDrawer({ visible, onClose, accountLabel, account
               onValueChange={toggleFourColor}
               colors={colors}
             />
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ABOUT</Text>
+            <AccountRow
+              label="Privacy policy"
+              onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
+              colors={colors}
+            />
           </View>
         </SafeAreaView>
       </Animated.View>
+      </SafeAreaProvider>
     </Modal>
   );
 }

@@ -27,6 +27,18 @@ export default function SiteFooter({ className = "" }) {
         }}
       >
         about
+      </a>{" "}
+      ·{" "}
+      <a
+        href="/privacy.html"
+        className="text-[var(--color-text-muted)] underline underline-offset-2 hover:text-[var(--color-accent)] transition-colors"
+        style={{
+          color: "var(--color-text-muted)",
+          textDecoration: "underline",
+          textUnderlineOffset: "2px",
+        }}
+      >
+        privacy
       </a>
     </footer>
   );

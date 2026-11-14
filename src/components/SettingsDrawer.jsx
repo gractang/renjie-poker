@@ -137,6 +137,15 @@ export default function SettingsDrawer({ open, onClose, accountLabel, accountDet
             checked={fourColor}
             onChange={toggleFourColor}
           />
+
+          <SectionLabel>About</SectionLabel>
+          <a
+            href="/privacy.html"
+            className="flex w-full items-center justify-between gap-3 border-b border-[var(--color-border)] py-3.5 text-[15px] text-[var(--color-text)]"
+          >
+            Privacy policy
+            <span aria-hidden="true" className="text-xl text-[var(--color-text-muted)]">›</span>
+          </a>
         </div>
       </aside>
     </div>

@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         main: resolve(process.cwd(), 'index.html'),
         about: resolve(process.cwd(), 'about.html'),
+        privacy: resolve(process.cwd(), 'privacy.html'),
       },
     },
   },

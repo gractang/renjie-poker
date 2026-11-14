@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy · Pick'em Poker</title>
+    <meta name="description" content="How Pick'em Poker collects, uses, and deletes your data." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (() => {
+        const saved = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
+        document.documentElement.classList.toggle("dark", saved ? saved === "dark" : prefersDark);
+      })();
+    </script>
+    <style>
+      :root {
+        --color-text: #2c2418;
+        --color-text-muted: #8a7e6e;
+        --color-background: #f7f3ec;
+        --color-border: #e4ddd2;
+        --color-accent: #40916c;
+      }
+
+      .dark {
+        --color-text: #e8e2d6;
+        --color-text-muted: #a59a8a;
+        --color-background: #1a1611;
+        --color-border: #3a3428;
+        --color-accent: #52b788;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--color-text);
+        background: var(--color-background);
+        font-family: "DM Sans", system-ui, sans-serif;
+        line-height: 1.6;
+      }
+
+      main {
+        width: min(720px, 100% - 32px);
+        margin: 32px auto 64px;
+      }
+
+      .back {
+        font-family: "DM Mono", monospace;
+        font-size: 14px;
+        color: var(--color-text-muted);
+        text-decoration: none;
+      }
+
+      .back:hover {
+        color: var(--color-accent);
+      }
+
+      h1 {
+        font-family: "DM Mono", monospace;
+        font-size: 22px;
+        font-weight: 500;
+        margin: 24px 0 4px;
+      }
+
+      h2 {
+        font-family: "DM Mono", monospace;
+        font-size: 13px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--color-text-muted);
+        margin: 32px 0 8px;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .updated {
+        color: var(--color-text-muted);
+        font-size: 14px;
+        margin: 0;
+      }
+
+      a {
+        color: var(--color-accent);
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="/">&larr; pick'em poker</a>
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated November 14, 2026</p>
+
+      <p>
+        Pick'em Poker is a free poker game on the web at pickem-poker.com and on iOS. You can play without an
+        account. This page explains what we collect if you do sign in, why, and how to delete it.
+      </p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li>
+          <strong>Account details.</strong> When you sign in with Google or Apple, we receive your email address,
+          a unique account ID, and your name if you choose to share it. Sign in with Apple lets you hide your real
+          email address.
+        </li>
+        <li>
+          <strong>Game history.</strong> For signed-in players we store the hands you play and their results, so we
+          can show your history and stats.
+        </li>
+        <li>
+          <strong>Profile and leaderboard.</strong> Your display name, and a leaderboard name if you opt in to the
+          public leaderboard.
+        </li>
+        <li>
+          <strong>Settings on your device.</strong> Preferences like dark mode and four-color deck are saved on your
+          device only and are never sent to us.
+        </li>
+      </ul>
+      <p>
+        We don't use advertising, we don't track you across other apps or websites, and we don't sell your data.
+      </p>
+
+      <h2>How we use it</h2>
+      <ul>
+        <li>To sign you in and keep your game history and stats attached to your account.</li>
+        <li>
+          To show your leaderboard name, win rate, and number of hands on the public leaderboard, only if you opt in.
+        </li>
+      </ul>
+
+      <h2>Who processes it</h2>
+      <ul>
+        <li><strong>Supabase</strong> hosts our database and handles sign-in.</li>
+        <li><strong>Google</strong> and <strong>Apple</strong> verify your identity when you use their sign-in.</li>
+        <li><strong>Vercel</strong> hosts the website.</li>
+      </ul>
+
+      <h2>Keeping and deleting your data</h2>
+      <p>
+        We keep your account data until you delete it. You can clear your hand history, or permanently delete your
+        account and everything attached to it, at any time: open the menu, choose your profile, and tap
+        <strong>delete account</strong>. Deletion is immediate and can't be undone.
+      </p>
+
+      <h2>Children</h2>
+      <p>Pick'em Poker is not directed at children under 13, and we don't knowingly collect their data.</p>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, we'll update this page and the date at the top.</p>
+
+      <h2>Contact</h2>
+      <!-- TODO: replace with a real contact address before publishing. -->
+      <p>Questions or requests: <a href="mailto:CONTACT_EMAIL">CONTACT_EMAIL</a></p>
+    </main>
+  </body>
+</html>
