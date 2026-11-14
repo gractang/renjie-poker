@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import useRenjiePokerEngine from "../src/engine/useRenjiePokerEngine";
 import useSupabaseAuth from "../src/hooks/useSupabaseAuth";
 import { useTheme } from "../src/hooks/useTheme";

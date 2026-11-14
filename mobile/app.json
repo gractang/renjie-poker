@@ -4,28 +4,41 @@
     "slug": "pickem-poker",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "pickem-poker",
-    "newArchEnabled": true,
-    "splash": {
-      "backgroundColor": "#1a1611"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pickempoker.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#1a1611"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#2a7550"
       },
       "package": "com.pickempoker.app"
     },
     "plugins": [
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-status-bar",
+      "expo-apple-authentication",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#f5f5f0",
+          "dark": {
+            "backgroundColor": "#1a1611"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

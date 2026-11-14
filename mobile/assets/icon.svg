@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#3a8f5f"/>
+      <stop offset="1" stop-color="#1f5c3a"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#felt)"/>
+  <g transform="translate(512 520) rotate(-12)">
+    <rect x="-210" y="-290" width="420" height="580" rx="44" fill="#f5f0e6"/>
+    <g transform="translate(0 0) scale(3.4)">
+      <path transform="translate(-50 50) scale(1 -1)" d="M50 90 C 10 60, 0 35, 25 20 C 40 10, 50 25, 50 30 C 50 25, 60 10, 75 20 C 100 35, 90 60, 50 90 Z" fill="#c0392b"/>
+    </g>
+  </g>
+  <g transform="translate(540 540) rotate(9)">
+    <rect x="-210" y="-290" width="420" height="580" rx="44" fill="#fffdf8" stroke="#1a1611" stroke-opacity="0.08" stroke-width="6"/>
+    <g transform="scale(3.6)">
+      <path transform="translate(-50 -58)" d="M50 10 C 90 40, 100 65, 75 80 C 60 90, 50 75, 50 70 C 50 75, 40 90, 25 80 C 0 65, 10 40, 50 10 Z" fill="#1a1611"/>
+      <path d="M0 6 L -12 38 L 12 38 Z" fill="#1a1611"/>
+    </g>
+  </g>
+</svg>
