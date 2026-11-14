@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle, Path } from "react-native-svg";
 import * as WebBrowser from "expo-web-browser";
 import { useTheme } from "../hooks/useTheme";
 
@@ -33,6 +34,53 @@ function SettingRow({ label, description, value, onValueChange, colors }) {
         onValueChange={onValueChange}
         trackColor={{ true: colors.accent, false: colors.border }}
       />
+    </View>
+  );
+}
+
+function SunIcon({ color }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round">
+      <Circle cx="12" cy="12" r="4" />
+      <Path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </Svg>
+  );
+}
+
+function MoonIcon({ color }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round">
+      <Path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </Svg>
+  );
+}
+
+function ThemeRow({ isDark, onSelect, colors }) {
+  const options = [
+    { dark: false, label: "Light", Icon: SunIcon },
+    { dark: true, label: "Dark", Icon: MoonIcon },
+  ];
+
+  return (
+    <View style={[styles.row, { borderBottomColor: colors.border }]}>
+      <Text style={[styles.rowLabel, styles.rowText, { color: colors.text }]}>Theme</Text>
+      <View style={[styles.segment, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+        {options.map(({ dark, label, Icon }) => {
+          const selected = dark === isDark;
+          return (
+            <TouchableOpacity
+              key={label}
+              onPress={() => onSelect(dark)}
+              accessibilityRole="button"
+              accessibilityLabel={`${label} mode`}
+              accessibilityState={{ selected }}
+              style={[styles.segmentBtn, selected && { backgroundColor: colors.accentBg }]}
+            >
+              <Icon color={selected ? colors.accent : colors.textMuted} />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -136,7 +184,7 @@ export default function SettingsDrawer({
               colors={colors}
             />
             <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>DISPLAY</Text>
-            <SettingRow label="Dark mode" value={isDark} onValueChange={toggle} colors={colors} />
+            <ThemeRow isDark={isDark} onSelect={(dark) => dark !== isDark && toggle()} colors={colors} />
             <SettingRow
               label="Four-color deck"
               description="Clubs green, diamonds blue"
@@ -220,6 +268,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginTop: 20,
     marginBottom: 2,
+  },
+  segment: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 3,
+    gap: 2,
+  },
+  segmentBtn: {
+    width: 40,
+    height: 32,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
   },
   chevron: {
     fontSize: 22,
