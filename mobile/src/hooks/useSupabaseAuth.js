@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as AuthSession from "expo-auth-session";
+import * as Crypto from "expo-crypto";
 import * as WebBrowser from "expo-web-browser";
 import { ensureProfileForUser } from "../lib/accountData";
 import { hasSupabaseConfig, supabase } from "../lib/supabaseClient";
@@ -113,6 +115,47 @@ export default function useSupabaseAuth() {
     }
   }, []);
 
+  // Native Sign in with Apple: Supabase verifies Apple's ID token against the raw nonce.
+  const signInWithApple = useCallback(async () => {
+    if (!supabase) throw new Error("Supabase is not configured.");
+    setError("");
+
+    const rawNonce = Crypto.randomUUID();
+    const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
+
+    let credential;
+    try {
+      credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+    } catch (appleError) {
+      if (appleError.code === "ERR_REQUEST_CANCELED") return;
+      throw appleError;
+    }
+
+    if (!credential.identityToken) throw new Error("Apple did not return an identity token.");
+
+    const { error: signInError } = await supabase.auth.signInWithIdToken({
+      provider: "apple",
+      token: credential.identityToken,
+      nonce: rawNonce,
+    });
+    if (signInError) {
+      setError(signInError.message);
+      throw signInError;
+    }
+
+    // Apple only shares the name on the first sign-in, so keep it for the profile's default display name.
+    const fullName = [credential.fullName?.givenName, credential.fullName?.familyName].filter(Boolean).join(" ");
+    if (fullName) {
+      await supabase.auth.updateUser({ data: { full_name: fullName } });
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     if (!supabase) throw new Error("Supabase is not configured.");
     const { error: signOutError } = await supabase.auth.signOut();
@@ -135,6 +178,7 @@ export default function useSupabaseAuth() {
     dismissNewUser,
     refreshProfile,
     signInWithGoogle,
+    signInWithApple,
     signOut,
   };
 }

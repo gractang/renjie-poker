@@ -10,8 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   clearCompletedHistory,
+  deleteAccount,
   EMPTY_STATS,
   fetchAccountSnapshot,
   fetchAppConfig,
@@ -69,11 +71,17 @@ function HistoryRow({ row, colors }) {
 }
 
 export default function AccountModal({ visible, onClose, auth, syncStatus, onRefresh }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const [appleSignInAvailable, setAppleSignInAvailable] = useState(false);
+
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync().then(setAppleSignInAvailable);
+  }, []);
 
   const [localMessage, setLocalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [clearingHistory, setClearingHistory] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
   const [editingProfile, setEditingProfile] = useState(false);
@@ -152,6 +160,18 @@ export default function AccountModal({ visible, onClose, auth, syncStatus, onRef
     }
   };
 
+  const handleApple = async () => {
+    setSubmitting(true);
+    setLocalMessage("");
+    try {
+      await auth.signInWithApple();
+    } catch (error) {
+      setLocalMessage(error.message ?? "Could not sign in with Apple.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleProfileSave = async () => {
     if (!auth.user) return;
     setSubmitting(true);
@@ -210,6 +230,34 @@ export default function AccountModal({ visible, onClose, auth, syncStatus, onRef
               setLocalMessage(error.message ?? "Could not clear history.");
             } finally {
               setClearingHistory(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    if (!auth.user || deletingAccount) return;
+
+    Alert.alert(
+      "Delete Account",
+      "This permanently deletes your account, hand history, stats, and leaderboard standing. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingAccount(true);
+            setLocalMessage("");
+            try {
+              await deleteAccount();
+              onClose();
+            } catch (error) {
+              setLocalMessage(error.message ?? "Could not delete your account.");
+            } finally {
+              setDeletingAccount(false);
             }
           },
         },
@@ -279,6 +327,18 @@ export default function AccountModal({ visible, onClose, auth, syncStatus, onRef
                     </View>
                   ))}
                 </View>
+
+                {appleSignInAvailable && (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                    buttonStyle={isDark
+                      ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                      : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                    cornerRadius={8}
+                    style={styles.appleBtn}
+                    onPress={submitting ? undefined : handleApple}
+                  />
+                )}
 
                 <TouchableOpacity
                   onPress={handleGoogle}
@@ -515,6 +575,16 @@ export default function AccountModal({ visible, onClose, auth, syncStatus, onRef
                     {clearingHistory ? "clearing history..." : "clear history"}
                   </Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleDeleteAccount}
+                  disabled={deletingAccount}
+                  style={[styles.clearBtn, { borderColor: colors.error }, deletingAccount && styles.disabled]}
+                >
+                  <Text style={[styles.clearBtnText, { color: colors.error }]}>
+                    {deletingAccount ? "deleting account..." : "delete account"}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {(localMessage || auth.error) ? (
@@ -559,6 +629,7 @@ const styles = StyleSheet.create({
   featureCard: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
   featureLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 2, fontFamily: "monospace" },
   featureDesc: { fontSize: 13, marginTop: 4, lineHeight: 18 },
+  appleBtn: { marginTop: 12, height: 48, width: "100%" },
   googleBtn: { marginTop: 12, paddingVertical: 14, borderRadius: 8, alignItems: "center" },
   googleBtnText: { fontSize: 14, fontWeight: "600" },
 

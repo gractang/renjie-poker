@@ -187,6 +187,15 @@ export async function fetchInProgressGame(userId) {
   return data;
 }
 
+// Permanently deletes the signed-in user and, via cascades, all of their data.
+export async function deleteAccount() {
+  const client = requireSupabase();
+  const { error } = await client.rpc("delete_my_account");
+  if (error) throw error;
+  // The user no longer exists server-side, so only clear the local session.
+  await client.auth.signOut({ scope: "local" });
+}
+
 export async function clearCompletedHistory(userId) {
   const client = requireSupabase();
 

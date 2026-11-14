@@ -3,6 +3,7 @@ import Modal from "./Modal";
 import HistoryRow from "./HistoryRow";
 import {
   clearCompletedHistory,
+  deleteAccount,
   EMPTY_STATS,
   fetchAppConfig,
   fetchAccountSnapshot,
@@ -50,6 +51,7 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
   const [localMessage, setLocalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [clearingHistory, setClearingHistory] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
   const [editingProfile, setEditingProfile] = useState(false);
@@ -200,6 +202,26 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
       setLocalMessage(error.message ?? "Could not clear history.");
     } finally {
       setClearingHistory(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!auth.user || deletingAccount) return;
+
+    const confirmed = window.confirm(
+      "Permanently delete your account? This removes your hand history, stats, and leaderboard standing, and can't be undone."
+    );
+    if (!confirmed) return;
+
+    setDeletingAccount(true);
+    setLocalMessage("");
+    try {
+      await deleteAccount();
+      onClose();
+    } catch (error) {
+      setLocalMessage(error.message ?? "Could not delete your account.");
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -453,6 +475,15 @@ export default function AccountModal({ open, onClose, auth, refreshToken, syncSt
             >
               <span>{clearingHistory ? "clearing history..." : "clear history"}</span>
               <span className="text-xs opacity-70">{clearingHistory ? "..." : "reset"}</span>
+            </button>
+            <button
+              className="btn-theme w-full justify-between border-[var(--color-suit-red)] text-[var(--color-suit-red)] hover:border-[var(--color-suit-red)] hover:bg-[color-mix(in_srgb,var(--color-suit-red)_14%,transparent)] hover:text-[var(--color-suit-red)] active:border-[var(--color-suit-red)] active:bg-[color-mix(in_srgb,var(--color-suit-red)_14%,transparent)] active:text-[var(--color-suit-red)] focus-visible:outline-[var(--color-suit-red)] disabled:cursor-not-allowed disabled:opacity-45"
+              onClick={handleDeleteAccount}
+              type="button"
+              disabled={deletingAccount}
+            >
+              <span>{deletingAccount ? "deleting account..." : "delete account"}</span>
+              <span className="text-xs opacity-70">{deletingAccount ? "..." : "permanent"}</span>
             </button>
           </div>
 
