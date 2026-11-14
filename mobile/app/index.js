@@ -18,6 +18,7 @@ import SelectionGrid from "../src/components/SelectionGrid";
 import RulesModal from "../src/components/RulesModal";
 import SettingsDrawer from "../src/components/SettingsDrawer";
 import AccountModal from "../src/components/AccountModal";
+import LeaderboardModal from "../src/components/LeaderboardModal";
 import LeaderboardOnboardingModal from "../src/components/LeaderboardOnboardingModal";
 
 function ResultTag({ tag, colors }) {
@@ -91,6 +92,7 @@ export default function GameScreen() {
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [syncStatus, setSyncStatus] = useState({ state: "idle", message: "" });
   const [accountRefreshToken, setAccountRefreshToken] = useState(0);
   const [inProgressSessionId, setInProgressSessionId] = useState(null);
@@ -426,6 +428,13 @@ export default function GameScreen() {
         accountLabel={auth.user ? "Profile" : "Log in"}
         accountDetail={auth.user ? auth.profile?.display_name || auth.user.email : "Save stats and join the leaderboard"}
         onOpenAccount={() => setShowAccount(true)}
+        onOpenLeaderboard={() => setShowLeaderboard(true)}
+      />
+
+      <LeaderboardModal
+        visible={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        currentUserId={auth.user?.id}
       />
 
       <AccountModal

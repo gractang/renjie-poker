@@ -56,7 +56,14 @@ function AccountRow({ label, detail, onPress, colors }) {
   );
 }
 
-export default function SettingsDrawer({ visible, onClose, accountLabel, accountDetail, onOpenAccount }) {
+export default function SettingsDrawer({
+  visible,
+  onClose,
+  accountLabel,
+  accountDetail,
+  onOpenAccount,
+  onOpenLeaderboard,
+}) {
   const { colors, isDark, toggle, fourColor, toggleFourColor } = useTheme();
   const [mounted, setMounted] = useState(visible);
   const progress = useRef(new Animated.Value(0)).current;
@@ -69,8 +76,8 @@ export default function SettingsDrawer({ visible, onClose, accountLabel, account
   };
 
   // iOS can't present another modal until this one has fully dismissed.
-  const handleOpenAccount = () => {
-    afterClose.current = onOpenAccount;
+  const closeThen = (action) => {
+    afterClose.current = action;
     onClose();
   };
 
@@ -121,7 +128,13 @@ export default function SettingsDrawer({ visible, onClose, accountLabel, account
           </View>
           <View style={styles.body}>
             <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
-            <AccountRow label={accountLabel} detail={accountDetail} onPress={handleOpenAccount} colors={colors} />
+            <AccountRow label={accountLabel} detail={accountDetail} onPress={() => closeThen(onOpenAccount)} colors={colors} />
+            <AccountRow
+              label="Leaderboard"
+              detail="Top players by win rate"
+              onPress={() => closeThen(onOpenLeaderboard)}
+              colors={colors}
+            />
             <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>DISPLAY</Text>
             <SettingRow label="Dark mode" value={isDark} onValueChange={toggle} colors={colors} />
             <SettingRow
