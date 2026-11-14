@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#2a7550"
+        "backgroundColor": "#f4eee6"
       },
       "package": "com.pickempoker.app"
     },
