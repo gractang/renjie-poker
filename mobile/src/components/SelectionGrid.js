@@ -1,12 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
-import { SUITS, SUIT_KEYS, RANKS, cardId, isRedSuit } from "../lib/deck";
+import { SUITS, SUIT_KEYS, RANKS, cardId } from "../lib/deck";
 import Card from "./Card";
 import { useTheme } from "../hooks/useTheme";
 
 function SuitSection({ suitKey, suitIndex, remainingIds, selection, disabled, onToggle }) {
-  const { colors } = useTheme();
+  const { colors, suitColor } = useTheme();
   const suitSymbol = SUITS[suitIndex];
-  const red = isRedSuit({ suitKey });
 
   const availableCount = RANKS.filter((rank) => {
     const id = `${rank}${suitKey}`;
@@ -16,7 +15,7 @@ function SuitSection({ suitKey, suitIndex, remainingIds, selection, disabled, on
   return (
     <View style={[styles.suitSection, { borderColor: colors.border, backgroundColor: colors.surface }]}>
       <View style={styles.suitHeader}>
-        <Text style={[styles.suitSymbol, { color: red ? colors.suitRed : colors.suitBlack }]}>
+        <Text style={[styles.suitSymbol, { color: suitColor(suitKey) }]}>
           {suitSymbol}
         </Text>
         <Text style={[styles.suitCount, { color: colors.textMuted }]}>

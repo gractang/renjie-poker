@@ -26,8 +26,6 @@ export const cardId = (c) => {
   return `${c.rank}${c.suitKey}`;
 };
 
-export const isRedSuit = (c) => c.suitKey === "H" || c.suitKey === "D";
-
 export const formatCard = (c) => `${c.rank}${c.suit}`;
 
 export function cardFromId(id) {

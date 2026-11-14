@@ -16,6 +16,7 @@ import HandRow from "../src/components/HandRow";
 import SelectionControls from "../src/components/SelectionControls";
 import SelectionGrid from "../src/components/SelectionGrid";
 import RulesModal from "../src/components/RulesModal";
+import SettingsDrawer from "../src/components/SettingsDrawer";
 import AccountModal from "../src/components/AccountModal";
 import LeaderboardOnboardingModal from "../src/components/LeaderboardOnboardingModal";
 
@@ -80,7 +81,7 @@ function reconstructGameState(session) {
 export default function GameScreen() {
   const eng = useRenjiePokerEngine();
   const auth = useSupabaseAuth();
-  const { colors, isDark, toggle } = useTheme();
+  const { colors } = useTheme();
 
   const {
     player, dealer, message, selection, remainingIds,
@@ -88,6 +89,7 @@ export default function GameScreen() {
   } = eng;
 
   const [showRules, setShowRules] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [syncStatus, setSyncStatus] = useState({ state: "idle", message: "" });
   const [accountRefreshToken, setAccountRefreshToken] = useState(0);
@@ -237,23 +239,23 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>pick'em poker</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={toggle} style={[styles.headerBtn, { borderColor: colors.border }]}>
-            <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>
-              {isDark ? "light" : "dark"}
-            </Text>
+        <View style={styles.titleRow}>
+          <TouchableOpacity
+            onPress={() => setShowSettings(true)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            style={styles.menuBtn}
+          >
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[styles.menuBar, { backgroundColor: colors.text }]} />
+            ))}
           </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>pick'em poker</Text>
+        </View>
+        <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => setShowRules(true)} style={[styles.headerBtn, { borderColor: colors.border }]}>
             <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>?</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setShowAccount(true)}
-            style={[styles.headerBtn, { borderColor: colors.border }]}
-          >
-            <Text style={[styles.headerBtnText, { color: colors.textMuted }]}>
-              {auth.user ? "profile" : "log in"}
-            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleNewGame}
@@ -274,6 +276,28 @@ export default function GameScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      <View style={[styles.dealBar, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+        <TouchableOpacity
+          onPress={handleDeal}
+          disabled={!canDeal}
+          activeOpacity={0.8}
+          style={[
+            styles.dealButton,
+            { borderColor: colors.border, backgroundColor: colors.surface },
+            canDeal && { borderColor: colors.accent, backgroundColor: colors.accent },
+            !canDeal && styles.disabled,
+          ]}
+        >
+          <Text style={[
+            styles.dealButtonText,
+            { color: colors.text },
+            canDeal && { color: "#fff" },
+          ]}>
+            {selection.size > 0 ? `Deal · ${selection.size} selected` : "Deal"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollInner}>
@@ -379,26 +403,6 @@ export default function GameScreen() {
             onClearSelection={eng.clearSelection}
           />
 
-          <TouchableOpacity
-            onPress={handleDeal}
-            disabled={!canDeal}
-            activeOpacity={0.8}
-            style={[
-              styles.dealButton,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-              canDeal && { borderColor: colors.accent, backgroundColor: colors.accent },
-              !canDeal && styles.disabled,
-            ]}
-          >
-            <Text style={[
-              styles.dealButtonText,
-              { color: colors.text },
-              canDeal && { color: "#fff" },
-            ]}>
-              Deal
-            </Text>
-          </TouchableOpacity>
-
           {!gameOver && (
             <SelectionGrid
               remainingIds={remainingIds}
@@ -420,6 +424,13 @@ export default function GameScreen() {
       </ScrollView>
 
       <RulesModal visible={showRules} onClose={() => setShowRules(false)} />
+      <SettingsDrawer
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        accountLabel={auth.user ? "Profile" : "Log in"}
+        accountDetail={auth.user ? auth.profile?.display_name || auth.user.email : "Save stats and join the leaderboard"}
+        onOpenAccount={() => setShowAccount(true)}
+      />
 
       <AccountModal
         visible={showAccount}
@@ -449,6 +460,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  menuBtn: {
+    width: 44,
+    height: 44,
+    marginLeft: -12,
+    marginRight: -12,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+    gap: 4,
+  },
+  menuBar: {
+    height: 2,
+    borderRadius: 1,
   },
   title: {
     fontSize: 18,
@@ -611,12 +640,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "monospace",
   },
+  dealBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
   dealButton: {
     paddingVertical: 14,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: "center",
-    marginVertical: 12,
   },
   dealButtonText: {
     fontSize: 16,

@@ -1,8 +1,12 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SUITS, SUIT_KEYS, RANKS, cardId } from "../lib/deck";
 import { useTheme } from "../hooks/useTheme";
 
-function PillButton({ label, onPress, active, disabled, colors, small }) {
+const GRID_COLUMNS = Math.ceil(RANKS.length / 2);
+const RANK_ROWS = [RANKS.slice(0, GRID_COLUMNS), RANKS.slice(GRID_COLUMNS)];
+const SUIT_LABELS = { S: "♠", H: "♥", C: "♣", D: "♦" };
+
+function PillButton({ label, labelColor, onPress, active, disabled, colors, grid }) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -13,18 +17,33 @@ function PillButton({ label, onPress, active, disabled, colors, small }) {
         { borderColor: colors.border, backgroundColor: colors.surface },
         active && { borderColor: colors.accent, backgroundColor: colors.accentBg },
         disabled && styles.disabled,
-        small && styles.pillSmall,
+        grid && styles.pillGrid,
       ]}
     >
       <Text style={[
         styles.pillText,
         { color: colors.text },
         active && { color: colors.accent },
-        small && styles.pillTextSmall,
+        labelColor && { color: labelColor },
+        grid && styles.pillTextGrid,
       ]}>
         {label}
       </Text>
     </TouchableOpacity>
+  );
+}
+
+function GridRow({ children }) {
+  const cells = Array.isArray(children) ? children : [children];
+  return (
+    <View style={styles.pills}>
+      {cells.map((cell) => (
+        <View key={cell.key} style={styles.gridCell}>{cell}</View>
+      ))}
+      {Array.from({ length: GRID_COLUMNS - cells.length }, (_, i) => (
+        <View key={`empty-${i}`} style={styles.gridCell} />
+      ))}
+    </View>
   );
 }
 
@@ -37,7 +56,7 @@ export default function SelectionControls({
   onSelectAll,
   onClearSelection,
 }) {
-  const { colors } = useTheme();
+  const { colors, suitColor } = useTheme();
 
   const isSuitFullySelected = (suitKey) => {
     const suitCards = remaining.filter(c => c.suitKey === suitKey);
@@ -49,42 +68,44 @@ export default function SelectionControls({
     return rankCards.length > 0 && rankCards.every(c => selection.has(cardId(c)));
   };
 
-  const suitLabels = { S: "♠", H: "♥", C: "♣", D: "♦" };
-
   return (
     <View style={styles.container}>
-      <View style={styles.row}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>Suits</Text>
-        <View style={styles.pills}>
+      <Text style={[styles.label, { color: colors.textMuted }]}>Suits</Text>
+      <View style={styles.grid}>
+        <GridRow>
           {SUIT_KEYS.map((sk) => (
             <PillButton
               key={sk}
-              label={suitLabels[sk]}
+              label={SUIT_LABELS[sk]}
+              labelColor={suitColor(sk)}
               onPress={() => onSelectSuit(sk)}
               active={isSuitFullySelected(sk)}
               disabled={disabled}
               colors={colors}
+              grid
             />
           ))}
-        </View>
+        </GridRow>
       </View>
 
       <Text style={[styles.label, { color: colors.textMuted, marginTop: 8 }]}>Ranks</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rankScroll}>
-        <View style={styles.pills}>
-          {RANKS.map((rank) => (
-            <PillButton
-              key={rank}
-              label={rank}
-              onPress={() => onSelectRank(rank)}
-              active={isRankFullySelected(rank)}
-              disabled={disabled}
-              colors={colors}
-              small
-            />
-          ))}
-        </View>
-      </ScrollView>
+      <View style={styles.grid}>
+        {RANK_ROWS.map((row, rowIndex) => (
+          <GridRow key={rowIndex}>
+            {row.map((rank) => (
+              <PillButton
+                key={rank}
+                label={rank}
+                onPress={() => onSelectRank(rank)}
+                active={isRankFullySelected(rank)}
+                disabled={disabled}
+                colors={colors}
+                grid
+              />
+            ))}
+          </GridRow>
+        ))}
+      </View>
 
       <View style={[styles.row, { marginTop: 8 }]}>
         <PillButton
@@ -123,16 +144,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  pillSmall: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  pillGrid: {
+    minHeight: 44,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    alignItems: "center",
+    justifyContent: "center",
   },
   pillText: {
     fontSize: 14,
     fontWeight: "500",
   },
-  pillTextSmall: {
-    fontSize: 13,
+  pillTextGrid: {
+    fontSize: 16,
   },
   label: {
     fontSize: 10,
@@ -141,8 +165,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 6,
   },
-  rankScroll: {
+  grid: {
+    gap: 6,
     marginBottom: 4,
+  },
+  gridCell: {
+    flex: 1,
   },
   disabled: {
     opacity: 0.4,

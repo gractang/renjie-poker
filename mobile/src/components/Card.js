@@ -1,11 +1,9 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { isRedSuit } from "../lib/deck";
 import { useTheme } from "../hooks/useTheme";
 
 export default function Card({ card, selected = false, disabled = false, dimmed = false, onPress }) {
-  const { colors } = useTheme();
-  const red = isRedSuit(card);
-  const suitColor = red ? colors.suitRed : colors.suitBlack;
+  const { colors, suitColor: colorForSuit } = useTheme();
+  const suitColor = colorForSuit(card.suitKey);
 
   const cardStyle = [
     styles.card,

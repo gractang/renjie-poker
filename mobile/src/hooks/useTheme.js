@@ -3,6 +3,7 @@ import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const THEME_KEY = "pickem-poker:theme";
+const FOUR_COLOR_KEY = "pickem-poker:four-color";
 
 const lightColors = {
   background: "#f5f5f0",
@@ -14,6 +15,8 @@ const lightColors = {
   accentBg: "rgba(45, 122, 79, 0.1)",
   suitRed: "#c0392b",
   suitBlack: "#1a1611",
+  suitBlue: "#1f5fbf",
+  suitGreen: "#1e8a3c",
   error: "#c0392b",
   winner: "#2d7a4f",
   loser: "#c0392b",
@@ -29,25 +32,41 @@ const darkColors = {
   accentBg: "rgba(92, 184, 122, 0.12)",
   suitRed: "#e74c3c",
   suitBlack: "#e8e4dc",
+  suitBlue: "#5b9cf0",
+  suitGreen: "#4cc46a",
   error: "#e74c3c",
   winner: "#5cb87a",
   loser: "#e74c3c",
 };
 
+function suitColorFor(suitKey, colors, fourColor) {
+  if (suitKey === "H") return colors.suitRed;
+  if (suitKey === "D") return fourColor ? colors.suitBlue : colors.suitRed;
+  if (suitKey === "C") return fourColor ? colors.suitGreen : colors.suitBlack;
+  return colors.suitBlack;
+}
+
 const ThemeContext = createContext({
   isDark: false,
   colors: lightColors,
   toggle: () => {},
+  fourColor: false,
+  toggleFourColor: () => {},
+  suitColor: (suitKey) => suitColorFor(suitKey, lightColors, false),
 });
 
 export function ThemeProvider({ children }) {
   const systemScheme = useColorScheme();
   const [isDark, setIsDark] = useState(systemScheme === "dark");
+  const [fourColor, setFourColor] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(THEME_KEY).then((stored) => {
       if (stored === "dark") setIsDark(true);
       else if (stored === "light") setIsDark(false);
+    });
+    AsyncStorage.getItem(FOUR_COLOR_KEY).then((stored) => {
+      setFourColor(stored === "on");
     });
   }, []);
 
@@ -59,10 +78,22 @@ export function ThemeProvider({ children }) {
     });
   }, []);
 
+  const toggleFourColor = useCallback(() => {
+    setFourColor((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem(FOUR_COLOR_KEY, next ? "on" : "off");
+      return next;
+    });
+  }, []);
+
   const colors = isDark ? darkColors : lightColors;
+  const suitColor = useCallback(
+    (suitKey) => suitColorFor(suitKey, colors, fourColor),
+    [colors, fourColor],
+  );
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, toggle }}>
+    <ThemeContext.Provider value={{ isDark, colors, toggle, fourColor, toggleFourColor, suitColor }}>
       {children}
     </ThemeContext.Provider>
   );
