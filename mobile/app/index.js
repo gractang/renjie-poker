@@ -368,16 +368,12 @@ export default function GameScreen() {
           </View>
         </View>
 
-        {deckCount > 0 && (
-          <View style={[styles.deckInfo, { borderColor: colors.border }]}>
-            <Text style={[styles.deckLabel, { color: colors.textMuted }]}>DECK</Text>
-            <Text style={[styles.deckCount, { color: colors.text }]}>{deckCount} live</Text>
-          </View>
-        )}
-
         <View style={[styles.selectionSection, { borderTopColor: colors.border }]}>
           <View style={styles.selectionHeader}>
-            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>SELECT FROM DECK</Text>
+            <View style={styles.selectionTitle}>
+              <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>SELECT FROM DECK</Text>
+              <Text style={[styles.deckCount, { color: colors.text }]}>{deckCount} live</Text>
+            </View>
             <View style={[styles.countBadge, { borderColor: colors.border, backgroundColor: colors.surface }]}>
               <Text style={[styles.countText, { color: colors.text }]}>
                 {selection.size} selected
@@ -596,19 +592,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontFamily: "monospace",
   },
-  deckInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  deckLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 2,
-    fontFamily: "monospace",
-  },
   deckCount: {
     fontSize: 12,
     fontFamily: "monospace",
@@ -622,6 +605,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
+  },
+  selectionTitle: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
   },
   sectionLabel: {
     fontSize: 10,
